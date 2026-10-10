@@ -725,8 +725,8 @@ fn launch(a: LaunchArgs, no_color: bool) -> Result<(), Box<dyn Error>> {
             if let Some(n) = server.context {
                 c.env("CLAUDE_CODE_MAX_CONTEXT_TOKENS", n.to_string());
             }
-            // Its auto-mode safety check (~30,500 tokens), read in the background now rather
-            // than at the first tool call (`warm`).
+            // Its auto-mode safety check (~31,000 tokens), read now, ahead of the session,
+            // rather than at the first tool call (`warm`).
             if warm::auto_mode(&a.rest) {
                 warm::spawn(server.port, &id, &bin);
                 warming = std::env::var_os("ARF_NO_WARM").is_none();
