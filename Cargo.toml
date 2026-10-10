@@ -74,7 +74,7 @@ tokio-stream = "0.1"
 # dashboard); crossterm is its backend and also styles the static screens.
 # clap_complete generates shell completion scripts (first-party clap companion).
 ratatui = "0.29"
-crossterm = "0.28"
+crossterm = "0.29"
 clap_complete = "4"
 
 # L358d — TESTS RUN OPTIMISED. Without this the workspace suite is effectively unrunnable, and
