@@ -7,11 +7,19 @@
 //! check's 60 s: the first tool calls of a session come back "temporarily unavailable" while it is
 //! read. `arf launch claude` starts this beside the agent. It runs the installed `claude` once,
 //! headless, in an empty folder against a stub endpoint here (no model, a few seconds of CPU) and
-//! keeps the two check requests it sends; then it sends them to the server as BACKGROUND work
-//! (`x-arf-background: 1`): read only when nothing else has work, and a real check that arrives
-//! first waits for it rather than reading the same tokens again. The states they leave are saved
-//! to disk with the others (`prefix_disk`), so the next start loads them. Nothing of Claude Code's
-//! is stored here: the prompts come from the version installed, each time.
+//! keeps the check requests it sends; then it sends them to the server AHEAD of the session, as
+//! ordinary requests read in the order they arrive. The states they leave are saved to disk with
+//! the others (`prefix_disk`), so the next start loads them and the read costs nothing. Nothing of
+//! Claude Code's is stored here: the prompts come from the version installed, each time.
+//!
+//! MEASURED OUT 2026-10-09/10: sending them as BACKGROUND work (`x-arf-background: 1`, read only
+//! when nothing else has work). An agent leaves no idle GPU at the moment it matters: its first
+//! message is read, its answer ends in a tool call, and the check for that call follows at once.
+//! In the 0.5.18 release test the background read sat at 128 of 30,987 tokens for the whole of
+//! the first message and was 1,602 s from done; Claude Code gave up on three ~45K-token checks
+//! after its 60 s each, and its real task ran past 900 s. Read ahead, the first answer of a
+//! machine's first session waits for the check (~3 min on an M4 Max) if it is sent within that
+//! time, and every tool call after it is checked in time.
 //!
 //! `ARF_NO_WARM=1` turns it off; so does a permission mode other than auto (no check is made).
 
@@ -410,9 +418,10 @@ pub fn claude(port: u16, model_id: &str, claude: &Path) -> Result<(), Box<dyn Er
     done
 }
 
-/// What a warm-up did, in `~/.arf/logs/warm-PORT.log` (rewritten by each): it runs detached
-/// with its output closed, and a warm-up that silently did nothing looks exactly like one that
-/// worked until the first tool call is slow.
+/// What a warm-up did, in `~/.arf/logs/warm-PORT.log`: it runs detached with its output closed,
+/// and a warm-up that silently did nothing looks exactly like one that worked until the first
+/// tool call is slow. Each warm-up appends (one `arf launch` after another each start one); past
+/// 64 KB the log starts over.
 struct Log {
     t0: Instant,
     file: Option<std::fs::File>,
@@ -422,11 +431,21 @@ impl Log {
     fn open(port: u16) -> Self {
         let dir = crate::daemon::arf_home().join("logs");
         let _ = std::fs::create_dir_all(&dir);
-        let file = std::fs::File::create(dir.join(format!("warm-{port}.log"))).ok();
-        Log {
+        let path = dir.join(format!("warm-{port}.log"));
+        let fresh = std::fs::metadata(&path).map_or(true, |m| m.len() > 64 << 10);
+        let file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(!fresh)
+            .write(true)
+            .truncate(fresh)
+            .open(&path)
+            .ok();
+        let mut log = Log {
             t0: Instant::now(),
             file,
-        }
+        };
+        log.line(&format!("warm-up {} started", std::process::id()));
+        log
     }
     fn line(&mut self, text: &str) {
         if let Some(f) = &mut self.file {
@@ -449,12 +468,11 @@ fn send(port: u16, model_id: &str, claude: &Path, log: &mut Log) -> Result<(), B
     for (i, mut body) in checks.into_iter().enumerate() {
         body["max_tokens"] = serde_json::json!(1);
         body["stream"] = serde_json::json!(false);
-        // A background read waits for the GPU to be free; it is not given up on.
+        // Read ahead, in arrival order (module docs); it is not given up on.
         let t = Instant::now();
         ureq::post(&format!("http://127.0.0.1:{port}/v1/messages"))
             .set("content-type", "application/json")
             .set("anthropic-version", "2023-06-01")
-            .set("x-arf-background", "1")
             .timeout(Duration::from_secs(3600))
             .send_string(&body.to_string())?;
         log.line(&format!(

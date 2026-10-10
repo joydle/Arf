@@ -155,6 +155,10 @@ def main():
                 aside.append((dst, src))
             else:
                 fresh.append(src)  # this run's alone: removed afterwards (prompt states are GBs)
+        # the warm-up's log on this port is this run's alone (it appends)
+        wlog = os.path.expanduser(f"~/.arf/logs/warm-{a.port}.log")
+        if os.path.exists(wlog):
+            os.remove(wlog)
     before = ""
     results = []  # (step, seconds, limit or None, ok, note)
     last = lambda out: out.splitlines()[-1][:60] if out else "no answer"
@@ -243,12 +247,13 @@ def main():
     results.append(("log: progress lines", None, None, progress > 0, f"{progress}"))
     results.append(("log: prompt state loaded after restart", None, None, loaded > 0, f"saved {saved}, loaded {loaded}"))
     results.append(("log: errors", None, None, not errors, errors[0][:60] if errors else "none"))
-    # `arf launch claude` reads the safety check ahead, as background work (`arf warm-claude`):
-    # its reads must have finished, or the first tool call reads ~30K tokens itself.
+    # `arf launch claude` reads the safety check ahead (`arf warm-claude`, its own log): a read
+    # must have finished, or the first tool call reads ~30K tokens itself.
     if a.engine == "arf":
-        warmed = re.findall(r"^\[done\] input (\d+) .*· background$", text, re.M)
+        wlog = os.path.expanduser(f"~/.arf/logs/warm-{a.port}.log")
+        warmed = re.findall(r"read by the server in ([\d.]+) s", open(wlog).read()) if os.path.exists(wlog) else []
         results.append(("log: safety check read ahead", None, None, bool(warmed),
-                        f"{len(warmed)} read(s): {', '.join(warmed)} tokens" if warmed else "none finished"))
+                        f"{len(warmed)} read(s): {', '.join(warmed)} s" if warmed else "none finished"))
     dones = re.findall(r"\[done\] input (\d+) · cached (\d+) · output \d+ · TTFT ([\d.]+) s", text)
 
     report(results, dones[2:])  # past the two warm-up requests
