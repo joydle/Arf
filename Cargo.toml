@@ -51,7 +51,7 @@ wide = "1.4"
 memmap2 = "0.9"
 # GPU backend (optional)
 wgpu = "29"
-pollster = "0.4"
+pollster = "1.0"
 bytemuck = { version = "1", features = ["derive"] }
 # Sebastian Aaltonen's `OffsetAllocator` (hard real-time GPU sub-allocator),
 # ported to safe Rust by pcwalton. Used to carve one resident device buffer
