@@ -149,7 +149,7 @@ dependencies = [
  "arf-ml",
  "criterion",
  "memmap2",
- "rand 0.9.5",
+ "rand 0.10.3",
  "safetensors",
  "serde_json",
  "thiserror",
@@ -187,7 +187,7 @@ name = "arf-ml"
 version = "1.0.0"
 dependencies = [
  "criterion",
- "rand 0.9.5",
+ "rand 0.10.3",
  "wide",
 ]
 
