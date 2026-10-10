@@ -1,0 +1,30 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+    paths: [Cargo.lock, Cargo.toml, "**/Cargo.toml", deny.toml, .github/workflows/security.yml]
+  pull_request:
+    paths: [Cargo.lock, Cargo.toml, "**/Cargo.toml", deny.toml]
+  schedule:
+    # Weekly, so new advisories surface even without a push.
+    - cron: "0 7 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: cargo-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
+      - run: cargo audit

@@ -1,0 +1,40 @@
+[package]
+name = "arf-core"
+description = "Backend-agnostic core of the arf LLM inference engine: tensor, model logic, GGUF/safetensors loading, paged KV cache, scheduler, sampling. No GPU dependency."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+arf-ml = { path = "../arf-ml" }
+safetensors = { workspace = true }
+tokenizers = { workspace = true }
+thiserror = { workspace = true }
+rand = { workspace = true }
+serde_json = { workspace = true }
+wide = { workspace = true }
+memmap2 = { workspace = true }
+tracing = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[features]
+default = []
+# Perf instrumentation: emit `tracing` spans/events on the hot paths.
+profiling = ["dep:tracing"]
+
+[[bench]]
+name = "ops"
+harness = false
+
+[[bench]]
+name = "engine"
+harness = false
+
+[lints]
+workspace = true

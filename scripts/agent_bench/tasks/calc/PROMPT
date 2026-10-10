@@ -1,0 +1,1 @@
+Run python3 test_calc.py with bash, fix every failure with the edit tool, re-run until it prints OK, then reply DONE.

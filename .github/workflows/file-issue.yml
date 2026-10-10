@@ -1,0 +1,45 @@
+# File an issue as github-actions[bot] (manual trigger only). Used to publish the tracker under a
+# neutral author; maintainers can still open issues directly.
+name: File issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: Issue title
+        required: true
+        type: string
+      body:
+        description: Issue body (Markdown)
+        required: true
+        type: string
+      labels:
+        description: Comma-separated labels
+        required: false
+        type: string
+        default: ""
+      milestone:
+        description: Milestone title
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  issues: write
+
+jobs:
+  file:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TITLE: ${{ inputs.title }}
+          BODY: ${{ inputs.body }}
+          LABELS: ${{ inputs.labels }}
+          MILESTONE: ${{ inputs.milestone }}
+        run: |
+          args=(--repo "$GITHUB_REPOSITORY" --title "$TITLE" --body "$BODY")
+          [ -n "$LABELS" ] && args+=(--label "$LABELS")
+          [ -n "$MILESTONE" ] && args+=(--milestone "$MILESTONE")
+          gh issue create "${args[@]}"

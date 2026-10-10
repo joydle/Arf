@@ -1,0 +1,221 @@
+Arf
+Copyright 2026 Arf contributors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software ported from, or adapted from, the third-party works
+below. Entries marked PORTED SOURCE contain code derived from the upstream source and
+remain subject to the upstream licence, whose required notice is reproduced in the
+"Licence texts" section at the end of this file. The other entries are attributions
+for formats, techniques or inspiration; no upstream source is bundled for them.
+
+Model weights are not part of this product. Arf downloads or reads weights the user
+chooses, and each checkpoint stays under its publisher's licence (for example Qwen,
+Llama 3.2, Gemma, FLUX.1, DINOv3); accepting that licence is the user's responsibility.
+
+- offset-allocator (https://crates.io/crates/offset-allocator)
+  Sebastian Aaltonen's `OffsetAllocator`, ported to safe Rust by Patrick Walton.
+  A crates.io dependency (not vendored), used in crates/arf-gpu (src/arena.rs) to
+  sub-allocate one resident GPU buffer into many aligned regions. Licensed under
+  MIT OR Apache-2.0.
+
+- llama.cpp / ggml (https://github.com/ggml-org/llama.cpp)
+  Licensed under MIT; Copyright (c) 2023-2026 The ggml authors (see "Licence texts").
+  The GGUF single-file model format and its Q4_0 / Q4_K / Q4_K_S / Q3_K / IQ3_S block
+  quantization layouts. Arf reads GGUF files and losslessly transcodes these block
+  formats; the format/layout understanding is derived from llama.cpp.
+  PORTED SOURCE: several kernels and routines are ports of llama.cpp / ggml code,
+  each marked at its definition ("port of llama.cpp ..."). Among them:
+    * crates/arf-core/src/model/gguf.rs — `dequantize_row_q3_K` and
+      `dequantize_row_iq3_s` (ggml-quants.c, llama.cpp 41fc7584f).
+    * crates/arf-core/src/model/qwen_vision.rs — `resize_bicubic_pillow`, a port of
+      llama.cpp's `img_tool::resize_pillow` (itself adapted from Pillow, below).
+    * crates/arf-serve/src/http/responses.rs — the Responses API request translation and
+      output shapes, after `server_chat_convert_responses_to_chatcmpl`
+      (tools/server/server-chat.cpp) and `to_json_oaicompat_resp*`
+      (tools/server/server-task.cpp).
+    * crates/arf-gpu/src/shaders/metal/moe_mm_id_q4ks.metal (`kernel_mul_mm_id`),
+      gemv_q4ks_id_msl.metal (`kernel_mul_mv_id`); matmul_vec_q4ks_msl.metal and
+      matmul_mm_q4ks.metal follow ggml-metal.metal's Q4_K kernel structure;
+      gated_delta_net_msl.metal and gdn_prologue_msl.metal (src/models/delta-net-base.cpp
+      and the ggml ops it uses), ssm_conv1d_msl.metal (`ggml_ssm_conv`), and their WGSL
+      twins under crates/arf-gpu/src/shaders/wgsl/ (e.g. matmul_vec_q4k_ggml.wgsl,
+      gated_delta_net.wgsl, ssm_conv1d.wgsl).
+    * the Metal residency-set and command-buffer concurrency logic in
+      crates/arf-gpu/src/gpu/metal/island.rs, crates/arf-gpu/src/gpu/context.rs and
+      crates/arf-gpu/src/weights.rs (ggml-metal-device.m, ggml-metal-context.m,
+      ggml-metal.cpp).
+    * crates/arf-serve/src/http/systemone.rs — the System One (`/v1/systemone`) request
+      parsing, decision prompt inputs, temperature lookup and answer math, a port of
+      tools/server/server-decision.cpp and `post_systemone` in tools/server/server-context.cpp,
+      and its `tojson` follows `value_to_json` in common/jinja/value.cpp (llama.cpp a4cb4c61f, read at 050439614).
+
+- Pillow (https://github.com/python-pillow/Pillow)
+  Licensed under the MIT-CMU License (see "Licence texts").
+  PORTED SOURCE (indirectly): the separable bicubic resample in
+  crates/arf-core/src/model/qwen_vision.rs follows llama.cpp's port of Pillow's
+  `Resample.c`, so it matches Pillow's output bit for bit.
+
+- Splash (https://github.com/incoai/splash)
+  Licensed under Apache-2.0 (the same licence text as this product's LICENSE). Splash
+  ships no NOTICE file. The files below are modified versions; each says so at its top.
+  The technique of running a 4-bit quantized matmul through Metal 4's
+  MetalPerformancePrimitives `matmul2d` over a native `uint4b_format` tensor, with
+  the affine scale/bias applied per quant group from precomputed input sums, and
+  the tile-ordered weight layout that goes with it.
+  PORTED SOURCE (2026-09-25): `crates/arf-gpu/src/shaders/metal/matmul_g64_msl.metal`
+  is a modified port of Splash 1.0.2's group-64 decode matmul
+  (`runtime/metal/kernels/common/q4_sgmatrix.h`, `decode/linear_q4_sgmatrix.metal`:
+  the bf16 `128+q` simdgroup-matrix operand, the split-K last-arriving reduction and
+  the gate/up epilogue), changed to take f32 activations and write f32 outputs with
+  f16 scale/bias. The StorageN=256 weight layout it reads is Splash's.
+  PORTED SOURCE (2026-09-25): `g64pf_mm_n128` in
+  `crates/arf-gpu/src/shaders/metal/matmul_g64_pf_msl.metal` is a modified port of Splash
+  1.0.2's eight-simdgroup prefill linear (`runtime/metal/kernels/prefill/linear_q4.metal`,
+  `q4_mpp_prefill_tile`), changed to take f32 activations (through a bf16 operand pass) and
+  write f32 outputs with f16 scale/bias.
+  PORTED SOURCE (2026-09-27): `crates/arf-gpu/src/shaders/metal/matmul_g64_pfs_msl.metal` is
+  a modified port of the same file's four-simdgroup prefill kernels
+  (`prefill_linear_q4_n128_sg4`, `prefill_linear_q4_n128_residual_sg4`,
+  `prefill_linear_q4_n128_up_silu_sums_sg4`, `q4_prefill_write_output_sums`) and its operand
+  pass (`prefill_linear_q4_sums32`) — the file is identical in Splash 1.0.2 and 1.1.0 —
+  changed the same way; the up-silu form keeps Splash's bf16 output and output sums.
+
+- DFlash 2 (https://github.com/z-lab/dflash, https://huggingface.co/incoai/Qwen3.8-27B-DFlash2)
+  The block-diffusion speculative drafter. Arf's draft path (crates/arf-gpu/src/gpu/metal/
+  dflash2*.rs, shaders/metal/dflash2_msl.metal) implements the model defined in
+  `dflash/model.py` — the two-tap grouped dynamic convolution, the block-plus-context
+  attention, the generate loop's context handling and the greedy candidate selector — and
+  `dflash2_ref.rs` is a plain CPU reference written from that file to gate the GPU path.
+  Splash's `runtime/model/DFlashDraft.cpp` was read for the Metal-side structure. The code is
+  MIT (z-lab/dflash; Copyright (c) 2026 Z Lab, see "Licence texts") and Apache-2.0 (Splash);
+  the draft CHECKPOINT is published by Inco AI / Z Lab under Apache-2.0 and is downloaded by
+  the user, not bundled.
+
+- FlexGEMM (https://github.com/JeffreyXiang/FlexGEMM)
+  Licensed under MIT; Copyright (c) 2025 Jianfeng Xiang (see "Licence texts").
+  PORTED SOURCE: the submanifold-conv neighbour map in `scripts/ref/trellis2/shim.py`
+  follows FlexGEMM's torch path (`flex_gemm/ops/spconv/submanifold_conv3d.py`,
+  `_compute_neighbor_cache_torch`). The shim is a reference/test harness and is not part
+  of the engine. TRELLIS.2 itself (MIT) is fetched by the user, not bundled.
+
+- Qwen chat templates and preprocessor configuration (https://huggingface.co/Qwen)
+  Test fixtures under crates/arf-serve/testdata/*.jinja are the chat templates published
+  with Qwen2.5 / Qwen3-Coder / Qwen3.8 checkpoints, and
+  crates/arf-core/testdata/qwen_audio/preprocessor_config.json is a Qwen3-Omni
+  preprocessor config, copied verbatim so rendering and feature extraction can be
+  checked against the reference. They are distributed under the Apache-2.0 licence of
+  the repositories they come from.
+
+- tiny-vllm (https://github.com/jmaczan/tiny-vllm)
+  Conceptual inspiration for a from-scratch, minimal vLLM-style inference engine.
+  No code is taken from it. Licensed under Apache-2.0.
+
+================================================================================
+Licence texts
+================================================================================
+
+---- llama.cpp / ggml -----------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2023-2026 The ggml authors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---- DFlash (z-lab/dflash) ------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2026 Z Lab
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---- FlexGEMM -------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2025 Jianfeng Xiang
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---- Pillow ---------------------------------------------------------------------
+
+The Python Imaging Library (PIL) is
+
+    Copyright © 1997-2011 by Secret Labs AB
+    Copyright © 1995-2011 by Fredrik Lundh and contributors
+
+Pillow is the friendly PIL fork. It is
+
+    Copyright © 2010 by Jeffrey 'Alex' Clark and contributors
+
+Like PIL, Pillow is licensed under the open source MIT-CMU License:
+
+By obtaining, using, and/or copying this software and/or its associated
+documentation, you agree that you have read, understood, and will comply
+with the following terms and conditions:
+
+Permission to use, copy, modify and distribute this software and its
+documentation for any purpose and without fee is hereby granted,
+provided that the above copyright notice appears in all copies, and that
+both that copyright notice and this permission notice appear in supporting
+documentation, and that the name of Secret Labs AB or the author not be
+used in advertising or publicity pertaining to distribution of the software
+without specific, written prior permission.
+
+SECRET LABS AB AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS
+SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS.
+IN NO EVENT SHALL SECRET LABS AB OR THE AUTHOR BE LIABLE FOR ANY SPECIAL,
+INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE
+OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.

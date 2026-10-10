@@ -1,0 +1,110 @@
+<|im_start|>system
+You are Qwen, a helpful AI assistant that can interact with a computer to solve tasks.
+
+You have access to the following functions:
+
+<tools>
+<function>
+<name>todowrite</name>
+<description>Write the todo list</description>
+<parameters>
+<parameter>
+<name>todos</name>
+<type>array</type>
+<description>The list</description>
+<items>{"type": "object", "properties": {"content": {"type": "string"}}}</items>
+</parameter>
+<parameter>
+<name>owner</name>
+<type>['string', 'null']</type>
+<description>Who</description>
+</parameter>
+<parameter>
+<name>mode</name>
+<anyOf>[{'type': 'string'}, {'type': 'null'}]</anyOf>
+<default>None</default>
+</parameter>
+<parameter>
+<name>ratio</name>
+<type>number</type>
+<default>1e-05</default>
+<minimum>0</minimum>
+<maximum>1e+16</maximum>
+</parameter>
+<parameter>
+<name>level</name>
+<type>integer</type>
+<enum>[1, 2]</enum>
+<default>1</default>
+</parameter>
+<parameter>
+<name>dry</name>
+<type>boolean</type>
+<default>True</default>
+</parameter>
+<parameter>
+<name>label</name>
+<type>string</type>
+<enum>[`a`, `b`]</enum>
+<examples>["it's", 'x\ny', 'tab\there']</examples>
+</parameter>
+<required>[`todos`]</required>
+</parameters>
+</function>
+</tools>
+
+If you choose to call a function ONLY reply in the following format with NO suffix:
+
+<tool_call>
+<function=example_function_name>
+<parameter=example_parameter_1>
+value_1
+</parameter>
+<parameter=example_parameter_2>
+This is the value for the second parameter
+that can span
+multiple lines
+</parameter>
+</function>
+</tool_call>
+
+<IMPORTANT>
+Reminder:
+- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags
+- Required parameters MUST be specified
+- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after
+- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls
+</IMPORTANT><|im_end|>
+<|im_start|>user
+Plan the fix.<|im_end|>
+<|im_start|>assistant
+Writing the plan.
+
+<tool_call>
+<function=todowrite>
+<parameter=todos>
+[{'content': 'fix add()', 'status': 'pending', 'n': 2.5}]
+</parameter>
+<parameter=dry>
+True
+</parameter>
+<parameter=ratio>
+0.5
+</parameter>
+<parameter=owner>
+None
+</parameter>
+<parameter=note>
+it's "q"
+</parameter>
+<parameter=big>
+1e+16
+</parameter>
+</function>
+</tool_call><|im_end|>
+<|im_start|>user
+<tool_response>
+ok
+</tool_response>
+<|im_end|>
+<|im_start|>assistant

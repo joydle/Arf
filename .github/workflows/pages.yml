@@ -1,0 +1,38 @@
+# The project site (site/), published with GitHub Pages on every push to main that touches it. The brand
+# files are copied in from assets/ here, so the repository holds one copy of each.
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "assets/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assemble the site
+        run: |
+          cp assets/arf-logo-dark.svg assets/arf-mark.svg assets/favicon.ico \
+             assets/apple-touch-icon.png assets/social-preview.png site/
+          test -f site/index.html && test -f site/knot.svg
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Refuse a push that would publish a leak (credentials, home paths, addresses, and an optional
+# local denylist). Install once per clone: `make hooks`. Bypass only with intent:
+# `git push --no-verify`, and say why in the PR.
+exec "$(git rev-parse --show-toplevel)/scripts/leak_scan.sh"

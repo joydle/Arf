@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Where to start
+    url: https://github.com/joydle/Arf/blob/main/CONTRIBUTING.md
+    about: Build commands, the house rules, and the parity suite every compute change must pass.

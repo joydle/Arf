@@ -1,0 +1,16 @@
+{
+  "recorded": "2026-09-05T08:01:20Z",
+  "commit": "0d71019",
+  "models": {
+    "qwen3.8-27b": {
+      "md5": "6d09ae3e5c31",
+      "tps": 18.6,
+      "levers": "doty=on nsg2=on vec4=on megakernel=on singleq=on batch_mega=on spec=off"
+    },
+    "gemma-4-12b": {
+      "md5": "97754d257e07",
+      "tps": 36.5,
+      "levers": "doty=on nsg2=on vec4=on megakernel=on singleq=on batch_mega=on spec=off"
+    }
+  }
+}

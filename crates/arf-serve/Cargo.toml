@@ -1,0 +1,70 @@
+[package]
+name = "arf-serve"
+description = "OpenAI- and Anthropic-compatible HTTP server for Arf. Loads the model once at startup and keeps it resident across requests."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "arf-serve"
+path = "src/main.rs"
+# The binary is the Metal server. Without `wgpu` the library still builds, for an embedding
+# binary that injects its own backend and runs `server::run`.
+required-features = ["wgpu"]
+
+[features]
+default = ["wgpu"]
+# `profiling` pulls in arf-gpu's GPU profiler so /profile serves REAL kernel data.
+wgpu = ["dep:arf-gpu", "arf-gpu/profiling"]
+# `postgres` enables opt-in chat persistence (DATABASE_URL). Zero-DB by default:
+# without this feature (and without DATABASE_URL set) the server persists nothing.
+postgres = ["dep:sqlx", "dep:uuid"]
+
+[dependencies]
+arf-core = { path = "../arf-core" }
+arf-gpu = { path = "../arf-gpu", optional = true }
+axum = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+tower-http = { version = "0.7", features = ["cors"] }
+serde = { version = "1", features = ["derive"] }
+# `raw_value`: `/v1/messages` sends a tool call's `input` as the model's own JSON text
+# (`anthropic::ReplyBlock`) — a `Value` would sort its keys. Already on in the build (axum
+# enables it); named here because this crate now depends on it. NOT `preserve_order`, which
+# would change every `Value`'s key order across the workspace.
+serde_json = { workspace = true, features = ["raw_value"] }
+# Server-side HTTP client for the HuggingFace model-search proxy (/hf/search). The
+# HF_TOKEN (when set) is attached here, server-side only — it is NEVER sent to the browser.
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+# Blocking client for remote media URLs (`remote_media`, ARF_MEDIA_URLS=1): its resolver hook pins
+# the connection to the vetted public addresses. Already in the lockfile through arf-cli.
+ureq = "2"
+clap = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+# Image decode for vision input (data-URL → RGB) + base64 for the data-URL payload.
+# Restricted to the web-common formats to keep the build lean.
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
+base64 = "0.22"
+# The model's OWN chat template (the GGUF's `tokenizer.chat_template` Jinja), rendered for
+# requests that carry tools or tool history — see `jinja_chat.rs`. `preserve_order` keeps JSON
+# key order through the template exactly as the client sent it (HF transformers does the same:
+# Python dicts are ordered); `loop_controls` is HF's `jinja2.ext.loopcontrols`. `pycompat` is
+# what makes `.startswith()` / `.items()` / `.keys()` work, which real templates call.
+minijinja = { version = "2.24", features = ["json", "preserve_order", "loop_controls"] }
+minijinja-contrib = { version = "2.24", features = ["pycompat"] }
+# Opt-in chat persistence (feature = "postgres"). Runtime queries only (no compile-time
+# `query!` macro), so the crate builds with NO database reachable.
+sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "macros", "migrate"], optional = true }
+uuid = { version = "1", features = ["v4", "serde"], optional = true }
+
+[dev-dependencies]
+futures-util = "0.3"
+tower-service = "0.3"
+
+[lints]
+workspace = true

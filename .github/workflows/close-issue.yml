@@ -1,0 +1,41 @@
+# Comment on an issue, and optionally close it, as github-actions[bot] (manual trigger only). The
+# companion of file-issue.yml: the tracker's issues are filed under a neutral author and closed the
+# same way, with the comment saying what closed them.
+name: Comment on issue
+
+on:
+  workflow_dispatch:
+    inputs:
+      number:
+        description: Issue number
+        required: true
+        type: string
+      body:
+        description: Comment (Markdown)
+        required: true
+        type: string
+      close:
+        description: "Close it: no, completed, or not planned"
+        required: false
+        type: choice
+        options: ["no", "completed", "not planned"]
+        default: "no"
+
+permissions:
+  issues: write
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment, then close if asked
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NUMBER: ${{ inputs.number }}
+          BODY: ${{ inputs.body }}
+          CLOSE: ${{ inputs.close }}
+        run: |
+          gh issue comment "$NUMBER" --repo "$GITHUB_REPOSITORY" --body "$BODY"
+          if [ "$CLOSE" != "no" ]; then
+            gh issue close "$NUMBER" --repo "$GITHUB_REPOSITORY" --reason "$CLOSE"
+          fi
