@@ -42,7 +42,7 @@ serde_json = { workspace = true, features = ["raw_value"] }
 reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
 # Blocking client for remote media URLs (`remote_media`, ARF_MEDIA_URLS=1): its resolver hook pins
 # the connection to the vetted public addresses. Already in the lockfile through arf-cli.
-ureq = "2"
+ureq = "3"
 clap = { workspace = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }

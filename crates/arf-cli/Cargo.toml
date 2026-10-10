@@ -17,7 +17,7 @@ path = "src/main.rs"
 arf-core = { path = "../arf-core" }
 arf-gpu = { path = "../arf-gpu" }
 clap = { workspace = true }
-ureq = "2"
+ureq = "3"
 serde_json = { workspace = true }
 # SHA-256 to verify downloaded weights against HuggingFace's content hash
 # (the `X-Linked-Etag` header). Pure Rust, no default `unsafe`.
