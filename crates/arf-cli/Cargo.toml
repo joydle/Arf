@@ -21,7 +21,7 @@ ureq = "2"
 serde_json = { workspace = true }
 # SHA-256 to verify downloaded weights against HuggingFace's content hash
 # (the `X-Linked-Etag` header). Pure Rust, no default `unsafe`.
-sha2 = "0.10"
+sha2 = "0.11"
 tracing-subscriber = { workspace = true, optional = true }
 ratatui = { workspace = true }
 crossterm = { workspace = true }
