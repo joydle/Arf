@@ -49,7 +49,7 @@ crossterm = { workspace = true }
 # Image decode for vision input (data-URL → RGB) + base64 for the data-URL payload.
 # Restricted to the web-common formats to keep the build lean.
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
-base64 = "0.22"
+base64 = "0.23"
 # The model's OWN chat template (the GGUF's `tokenizer.chat_template` Jinja), rendered for
 # requests that carry tools or tool history — see `jinja_chat.rs`. `preserve_order` keeps JSON
 # key order through the template exactly as the client sent it (HF transformers does the same:
