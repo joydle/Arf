@@ -1,0 +1,20 @@
+[package]
+name = "arf-ml"
+description = "The numeric floor of the arf engine: an f32 tensor, block-quantized weight formats (Q4_0/Q4_K/Q4_K_S/Q3_K/Q8/bf16), TurboQuant KV compression, and cache-aware CPU matmul kernels. No model logic, no I/O, no GPU."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+wide = { workspace = true }
+rand = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,15 @@
+# cargo-nextest (https://nexte.st) — `make nextest`. Every test runs in its OWN PROCESS, so a test
+# that mutates process-global state (env vars) cannot race a sibling: a 2026-09-26 flake (an ARF_*
+# env var set by one test while another read it; 149 failures in 500 runs) is exactly the class this
+# isolates. `cargo test --workspace` stays the CI gate.
+[profile.default]
+# keep going after a failure: one red test should not hide the others
+fail-fast = false
+# a test still running after 2 minutes is stuck; report it, kill it at 6
+slow-timeout = { period = "120s", terminate-after = 3 }
+# list the slowest tests at the end, so a creeping fixture shows early
+final-status-level = "slow"
+
+[profile.ci]
+fail-fast = false
+slow-timeout = { period = "180s", terminate-after = 2 }

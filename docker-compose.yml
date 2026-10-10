@@ -1,0 +1,29 @@
+# Opt-in Postgres for arf-serve chat persistence.
+#
+#   docker compose up -d
+#   DATABASE_URL=postgres://arf:arf@127.0.0.1:5432/arf \
+#     cargo run --release -p arf-serve --features postgres -- --model ... --arch ...
+#
+# Without this database (and without --features postgres) the server persists nothing:
+# conversations live only for the lifetime of the process.
+services:
+  postgres:
+    image: postgres:16
+    container_name: arf-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: arf
+      POSTGRES_USER: arf
+      POSTGRES_PASSWORD: arf
+    ports:
+      - "5432:5432"
+    volumes:
+      - arf_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arf -d arf"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  arf_pgdata:

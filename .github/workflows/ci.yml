@@ -1,0 +1,173 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: fmt · clippy · test · doc
+    # macOS (2026-08-06): Arf targets METAL on macOS, so this is
+    # the job that exercises the code which actually ships. macos-14 is Apple Silicon.
+    # L364 — this used to be the ONLY job, on the argument that Linux "could not compile the Metal
+    # island". True and beside the point: Linux compiles without it, and nothing checked that the
+    # non-macOS build stayed green. The `linux` job below now does.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Leak scan (generic patterns)
+        run: bash scripts/leak_scan.sh
+        env:
+          ARF_INDEX_EXCLUDE: ${{ vars.ARF_INDEX_EXCLUDE }}
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy (deny warnings)
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --workspace --locked
+      - name: Docs (deny warnings)
+        run: cargo doc --no-deps --workspace --locked
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  linux:
+    # L364 (2026-09-08) — Linux users asked for a build, and the workspace did not compile there:
+    # 32 errors, all one root cause (code outside `cfg(target_os = "macos")` naming island-only
+    # fields and methods). Fixed with a `metal_shim` module of uninhabited stand-ins plus gating
+    # on the genuinely Metal-only fns. THIS JOB EXISTS SO IT STAYS FIXED.
+    #
+    # The old comment here said Linux "could NOT compile the Metal island — the code that actually
+    # ships", and skipped Linux CI on that basis. That reasoning was wrong in one word: Linux does
+    # not need to compile the island, it needs to compile WITHOUT it. Nothing checked that, so it
+    # rotted until a user hit it.
+    #
+    # ⚠️ SCOPE: this proves the workspace compiles, lints and passes its CPU tests on Linux. It
+    # does NOT prove any GPU path works there — no Vulkan decode has ever been run. See
+    # docs/PLATFORMS.md before quoting this job as "Linux support".
+    name: linux (compiles · lints · CPU tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy (deny warnings)
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --workspace --locked
+
+  msrv:
+    # The declared `rust-version` is a PROMISE. It said 1.80 for months while `wide` needed
+    # 1.89 and wgpu 29 needed 1.87 — a claim nothing checked, which would have failed for
+    # anyone on 1.80-1.88. This job builds on exactly the declared toolchain so the promise
+    # stays true. If it fails: either a dependency raised its floor (bump rust-version here
+    # and in the comment) or code used a newer feature than the claim allows.
+    name: msrv (builds on the declared rust-version)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - name: Read rust-version from Cargo.toml
+        id: msrv
+        run: echo "v=$(grep -m1 '^rust-version' Cargo.toml | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?')" >> "$GITHUB_OUTPUT"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.msrv.outputs.v }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the workspace on the declared MSRV
+        run: cargo check --workspace --locked --all-targets
+
+  lean-build:
+    # The crates advertise optional features; `selftest` alone gates 4,649 lines. A consumer who
+    # takes arf-core with --no-default-features must still get a crate that COMPILES, and
+    # nothing checked that — it works today by accident, not by test. Cheap to keep true, and the
+    # failure mode without it is a downstream user hitting an error we could have caught.
+    name: lean build (--no-default-features)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: arf-ml
+        run: cargo check -p arf-ml --no-default-features --locked
+      - name: arf-core
+        run: cargo check -p arf-core --no-default-features --locked
+      - name: arf-gpu
+        run: cargo check -p arf-gpu --no-default-features --locked
+      # arf-serve without `wgpu` is the build an embedding binary links to inject its own
+      # backend into `arf_serve::server::run` (the backend seam, public API).
+      - name: arf-serve
+        run: cargo check -p arf-serve --no-default-features --locked
+
+  deps-pin-guard:
+    # THE CONC64-HANG GUARD (2026-07-08): a dependency drift of objc2-metal from the WORKING split
+    # (0.2.2 for wgpu-hal's transitive + 0.3.2 for our island) to a UNIFIED 0.3.2 silently broke the
+    # Metal command submission → conc64 hung forever, and it took an all-night hunt to find. This job
+    # fails CI if the working objc2-metal versions ever change in Cargo.lock. If it fails: a dep bump
+    # changed the Metal FFI — DO NOT merge until conc64 is re-verified on hardware.
+    #
+    # CORRECTION 2026-09-27 — the "split" this job asserted was red from the day it was written and
+    # never described the lock that worked. At the golden commit (2026-06-29), wgpu-hal 29.0.3 ALREADY
+    # resolved objc2-metal 0.3.2 / objc2 0.6.4; the second 0.2.2 / 0.5.2 came from objc2-app-kit
+    # under a since-removed HUD crate. The recovery commit (2026-07-08) itself
+    # committed a UNIFIED lock (one objc2-metal 0.3.2, one objc2 0.6.4) and measured conc64 363 tok/s
+    # on it; every Cargo.lock since has kept that single version, and conc64 439 and all multi-stream
+    # work since were measured on it. The old 0.2.2 step only ever passed on unrelated crates' 0.2.2;
+    # the 0.5.2 step failed on every run. What the July hang actually was is NOT settled by this —
+    # the same day also shipped the island fence before the wgpu logits readback. The invariant
+    # that does hold is the one crates/arf-gpu/Cargo.toml states: the island passes raw MTLBuffer
+    # across wgpu-hal's as_hal, so it must resolve the SAME objc2-metal / objc2 as wgpu-hal. The steps
+    # below assert exactly that lock. If one fails, a dep bump moved the Metal FFI: re-verify conc64
+    # and b>=2 decode on hardware before merging.
+    name: deps pin guard (objc2-metal / objc2 unified with wgpu-hal)
+    # Pure Cargo.lock text asserts; kept on macOS so the whole fleet is one OS.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assert exactly one objc2-metal, 0.3.2
+        run: test "$(grep -A1 '^name = "objc2-metal"$' Cargo.lock | grep '^version' | tr -d '\n')" = 'version = "0.3.2"' || { echo "::error::objc2-metal is no longer a single 0.3.2 in Cargo.lock — the island and wgpu-hal may now resolve different Metal FFI. Re-verify conc64 on hardware."; exit 1; }
+      - name: Assert exactly one objc2, 0.6.4
+        run: test "$(grep -A1 '^name = "objc2"$' Cargo.lock | grep '^version' | tr -d '\n')" = 'version = "0.6.4"' || { echo "::error::objc2 is no longer a single 0.6.4 in Cargo.lock — the FFI layer under the island changed. Re-verify conc64 on hardware."; exit 1; }
+      - name: Assert wgpu-hal is 29.0.3 (the version the island's pins were matched to)
+        run: test "$(grep -A1 '^name = "wgpu-hal"$' Cargo.lock | grep '^version' | tr -d '\n')" = 'version = "29.0.3"' || { echo "::error::wgpu-hal moved off 29.0.3 — re-match the objc2-metal/objc2 pins in crates/arf-gpu/Cargo.toml and re-verify on hardware."; exit 1; }
+
+  gpu:
+    name: gpu backend (build · clippy · metal)
+    # This job existed for naga WGSL validation on a GPU-less Linux runner. With WGSL retiring
+    # the valuable check is the opposite: that the MSL island COMPILES. On macos-14 the
+    # #[cfg(target_os = "macos")] island is type-checked and clippy'd for the first time in CI.
+    # Hosted runners still have no usable GPU adapter, so runtime GPU tests keep skipping.
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      # The wgpu/Metal backend (`arf-gpu`) is a normal default dependency,
+      # not a Cargo feature. The only optional feature is `profiling`.
+      - name: Clippy (wgpu backend, deny warnings)
+        run: cargo clippy -p arf-gpu --all-targets --locked -- -D warnings
+      - name: Clippy (wgpu + profiling, deny warnings)
+        run: cargo clippy -p arf-gpu --features profiling --all-targets --locked -- -D warnings
+      - name: Build CLI (profiling)
+        run: cargo build -p arf-cli --features profiling --locked
+      # No GPU adapter on hosted runners: this builds the backend and runs the
+      # naga WGSL validation; the numerical-parity test skips itself.
+      - name: Test (wgpu backend)
+        run: cargo test -p arf-gpu --locked

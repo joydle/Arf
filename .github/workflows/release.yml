@@ -1,0 +1,67 @@
+# Release: on a `v*` tag, build the Apple-silicon binaries, package them, and publish a GitHub
+# release. The Homebrew formula (joydle/homebrew-tap, `brew install joydle/tap/arf`) downloads the
+# tarball this produces, and the last step points it at the new one (`scripts/update_tap_formula.sh`)
+# through TAP_DEPLOY_KEY, a deploy key with write access to that repository alone, kept in the
+# `release` environment (tags `v*` only). Without the secret
+# the step warns and prints the command to run by hand; the release itself is not failed.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  macos-arm64:
+    name: release (aarch64-apple-darwin)
+    runs-on: macos-14
+    # TAP_DEPLOY_KEY lives in this environment, which only `v*` tags may deploy to: no branch push,
+    # no other workflow and no pull request can read it.
+    environment: release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - name: The tag matches the workspace version
+        run: |
+          v=$(sed -n 's/^version = "\(.*\)"$/\1/p' Cargo.toml | head -1)
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "::error::tag $GITHUB_REF_NAME, Cargo.toml version $v"; exit 1; }
+      # Generic aarch64 code (no target-cpu=native): the binary must run on every Apple-silicon Mac,
+      # not just the runner's.
+      - name: Build
+        run: cargo build --release --locked -p arf-cli -p arf-serve -p arf-router
+      - name: Package
+        run: |
+          name="arf-${GITHUB_REF_NAME#v}-aarch64-apple-darwin"
+          mkdir -p "dist/$name"
+          cp target/release/arf target/release/arf-serve target/release/arf-router LICENSE NOTICE README.md "dist/$name/"
+          "dist/$name/arf" --version
+          tar -C dist -czf "dist/$name.tar.gz" "$name"
+          (cd dist && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256" && cat "$name.tar.gz.sha256")
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.tar.gz dist/*.sha256 \
+            --title "Arf $GITHUB_REF_NAME" --notes-file docs/RELEASE_NOTES.md --verify-tag
+      - name: Point the Homebrew formula at this release
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.TAP_DEPLOY_KEY }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sha=$(cut -d' ' -f1 "dist/arf-$version-aarch64-apple-darwin.tar.gz.sha256")
+          if [ -z "$TAP_DEPLOY_KEY" ]; then
+            echo "::warning::TAP_DEPLOY_KEY is not set; update the formula by hand: scripts/update_tap_formula.sh Formula/arf.rb $version $sha"
+            exit 0
+          fi
+          install -m 600 /dev/null "$RUNNER_TEMP/tap_key"
+          printf '%s\n' "$TAP_DEPLOY_KEY" > "$RUNNER_TEMP/tap_key"
+          export GIT_SSH_COMMAND="ssh -i $RUNNER_TEMP/tap_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 git@github.com:joydle/homebrew-tap.git "$RUNNER_TEMP/tap"
+          scripts/update_tap_formula.sh "$RUNNER_TEMP/tap/Formula/arf.rb" "$version" "$sha"
+          cd "$RUNNER_TEMP/tap"
+          git -c user.name=joydle-oss-bot -c user.email=contact@joydle.dev \
+            commit -am "arf $version" -m "Point the formula at the v$version release tarball."
+          git push origin HEAD
+          rm -f "$RUNNER_TEMP/tap_key"

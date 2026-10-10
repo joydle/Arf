@@ -1,0 +1,66 @@
+[package]
+name = "arf-gpu"
+description = "The GPU backend for Arf: the Metal (MSL) decode and prefill engine on Apple silicon, with a portable wgpu/WGSL path. Some kernels are ports of llama.cpp/ggml and Splash; see NOTICE."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+arf-core = { path = "../arf-core" }
+wgpu = { workspace = true }
+pollster = { workspace = true }
+bytemuck = { workspace = true }
+offset-allocator = { workspace = true }
+memmap2 = { workspace = true }
+safetensors = { workspace = true }
+tracing = { workspace = true, optional = true }
+
+# Native Metal island (macOS only): drop through wgpu's as_hal into raw Metal to build
+# concurrent compute encoders (MTLDispatchTypeConcurrent) + persistent MSL pipelines —
+# the speed island wgpu's serial-encoder abstraction can't express. Portable wgpu stays
+# the default everywhere; this is the Mac-only fast path.
+# Exact pins MUST match wgpu-hal's transitive objc2-metal/objc2 (a second 0.2.2/0.5.2 is
+# pulled by objc2-app-kit; cargo namespaces them but wrong resolution silently breaks
+# the raw MTLBuffer type). naga compiles our existing WGSL kernels → MSL at runtime so the
+# island stays bit-identical to the wgpu path (the parity gate).
+[target.'cfg(target_os = "macos")'.dependencies]
+wgpu-hal = "=29.0.3"
+# block2 feature: MTLCommandBuffer::addCompletedHandler for the async completion-handler ring
+# (CPU never blocks on the GPU → no inter-buffer idle gap, the game-engine GPU-never-stalls path).
+objc2-metal = { version = "=0.3.2", features = ["block2", "MTLResidencySet", "MTLAllocation", "MTLBlitCommandEncoder"] }
+objc2 = "=0.6.4"
+objc2-foundation = "=0.3.2"
+block2 = "=0.6.2"
+naga = { version = "29", features = ["wgsl-in", "msl-out"] }
+# The DFlash 2 draft's `config.json` (gpu/metal/dflash2.rs). Already in the workspace and the
+# lockfile (arf-core and the server use it); this adds no new crate to the build.
+serde_json = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+criterion = { workspace = true }
+# CPU-side WGSL validation for the GPU kernels (matches wgpu's naga version).
+naga = { version = "29", features = ["wgsl-in"] }
+# Image decode for the vision_sum_probe example (numerical localization vs llama.cpp).
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
+# FLUX end-to-end example (flux_generate): CLIP/T5 prompt tokenization.
+tokenizers = { workspace = true }
+
+[features]
+default = ["selftest"]
+# L263 — parity oracles + probes (4.6k lines). On by default so examples/tests work;
+# `--no-default-features` gives a lean release build.
+selftest = []
+# Perf instrumentation: per-kernel GPU timing via wgpu TIMESTAMP_QUERY + tracing.
+profiling = ["dep:tracing", "arf-core/profiling"]
+
+[[bench]]
+name = "gpu_decode"
+harness = false
+
+[lints]
+workspace = true

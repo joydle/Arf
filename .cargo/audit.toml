@@ -1,0 +1,8 @@
+# Advisories accepted for `cargo audit`. Keep in step with `[advisories] ignore` in deny.toml.
+[advisories]
+ignore = [
+    # rsa (Marvin timing attack), no fixed release. It is in Cargo.lock only because sqlx's macro
+    # crate lists sqlx-mysql; Arf enables sqlx with the `postgres` feature alone, so rsa is never
+    # compiled. Re-check if a MySQL backend is ever enabled.
+    "RUSTSEC-2023-0071",
+]

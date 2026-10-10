@@ -1,0 +1,6 @@
+# ONE pinned toolchain for local builds and CI. Without it
+# CI used whatever `stable` was current, so a new clippy release could turn CI red with no code
+# change while the same tree passed locally. Bump deliberately: change this line, run `make check`.
+[toolchain]
+channel = "1.91.1"
+components = ["rustfmt", "clippy"]

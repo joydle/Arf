@@ -1,0 +1,28 @@
+/target
+**/*.rs.bk
+*.safetensors
+/models
+
+# local secrets (HF_TOKEN etc) — never commit
+.env
+.env.local
+logits.jsonl
+
+# runtime profiler artifact
+arf-profile.json
+__pycache__/
+
+# macOS Finder metadata
+.DS_Store
+
+# logs from local runs and benchmarks
+*.log
+
+# AI coding assistants' local state. AGENTS.md is a tool's untracked copy of CLAUDE.md;
+# CLAUDE.md itself is tracked and is the source.
+.claude/
+.codex/
+AGENTS.md
+
+# local Makefile overrides (the Makefile `-include`s it when present)
+local.mk

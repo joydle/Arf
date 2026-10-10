@@ -1,0 +1,24 @@
+# TRELLIS.2 CPU reference harness (M0 of the TRELLIS.2 port). Exact pins of the venv that
+# produced the 2026-09-27 fixtures: Python 3.11.14, macOS arm64, CPU-only torch.
+#   uv venv --python 3.11 /tmp/trellis2-ref/venv
+#   uv pip install --python /tmp/trellis2-ref/venv/bin/python -r scripts/ref/trellis2/requirements.txt
+# Reference source: git clone https://github.com/microsoft/TRELLIS.2 /tmp/trellis2-src
+#                   && git -C /tmp/trellis2-src checkout 75fbf0183001ed9876c8dbb35de6b68552ee08bd
+# FlexGEMM source (only for check_shim.py's comparison against its own torch path):
+#                   git clone https://github.com/JeffreyXiang/FlexGEMM /tmp/flexgemm-src   (tested @ 6dd94a8)
+# NOT installed, on purpose: flash-attn, xformers, flex_gemm, o_voxel, cumesh, nvdiffrast (CUDA
+# only; shim.py stands in for the first four, the last two have no CPU path).
+#
+# transformers: the reference's DinoV3FeatureExtractor iterates `DINOv3ViTModel.layer`, which is
+# the 4.56 layout (5.x nests it under `.model`). 4.56.2 imports cleanly; DINOv3 itself is gated and
+# was NOT run (no licence acceptance yet), so this pin is verified for import only.
+torch==2.6.0
+torchvision==0.21.0
+transformers==4.56.2
+huggingface-hub==0.36.2
+safetensors==0.8.0
+numpy==2.4.6
+pillow==12.3.0
+easydict==1.13
+tqdm==4.70.1
+tokenizers==0.22.2

@@ -1,0 +1,9 @@
+[{"type": "function", "function": {"name": "todowrite", "description": "Write the todo list", "parameters": {"type": "object", "properties": {
+  "todos": {"type": "array", "description": "The list", "items": {"type": "object", "properties": {"content": {"type": "string"}}}},
+  "owner": {"type": ["string", "null"], "description": "Who"},
+  "mode": {"anyOf": [{"type": "string"}, {"type": "null"}], "default": null},
+  "ratio": {"type": "number", "default": 1e-05, "minimum": 0, "maximum": 1e16},
+  "level": {"type": "integer", "enum": [1, 2], "default": 1},
+  "dry": {"type": "boolean", "default": true},
+  "label": {"type": "string", "enum": ["a", "b"], "examples": ["it's", "x\ny", "tab\there"]}
+}, "required": ["todos"]}}}]

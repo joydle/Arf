@@ -1,0 +1,117 @@
+[workspace]
+resolver = "2"
+# Every crate under crates/ is a member. Members are globbed so they need not be listed.
+members = ["crates/*"]
+
+# Lint policy. We keep CI on `-D warnings`, but a numerical GPU engine has a few
+# lints whose "fix" hurts clarity or risks correctness — those are allowed here with
+# a reason, not scattered as inline #[allow]. Everything else must be fixed, not muted.
+[workspace.lints.clippy]
+# GPU dispatch/record fns legitimately take many buffers/dims as positional args;
+# bundling them into a struct obscures the 1:1 mapping to Metal binding slots.
+too_many_arguments = "allow"
+# Kernel-index loops (`for i in 0..n { buf[i] }`) mirror the GPU thread-index math;
+# rewriting to iterators makes the parity-with-shader correspondence harder to audit.
+needless_range_loop = "allow"
+# Quantized-weight buffer views are inherently nested generic types; a `type` alias
+# per one-off shape adds indirection without clarity.
+type_complexity = "allow"
+# Cosmetic rustdoc-markdown pedantry on multi-line list continuations in our detailed
+# kernel doc comments — renders fine; not worth reflowing dense engineering notes.
+doc_lazy_continuation = "allow"
+
+[workspace.package]
+version = "1.0.0"
+edition = "2021"
+license = "Apache-2.0"
+# repository = "<REPO_URL>"  -- not set yet. Set it here (and `homepage`), then add
+# `repository.workspace = true` / `homepage.workspace = true` back to each crate's [package]
+# before the first `cargo publish`.
+# homepage = "<REPO_URL>"
+readme = "README.md"
+keywords = ["llm", "inference", "gpu", "metal", "quantization"]
+categories = ["science", "concurrency"]
+# Verified against the dependency tree, not guessed: `wide` (our SIMD crate) and
+# `safe_arch` require 1.89, wgpu 29 requires 1.87. This said 1.80 for a long time — a
+# claim nothing checked, which would have failed for anyone on 1.80-1.88. CI now builds
+# on exactly this toolchain so it cannot drift again.
+rust-version = "1.89"
+
+[workspace.dependencies]
+safetensors = "0.8"
+tokenizers = { version = "0.23", default-features = false, features = ["onig"] }
+thiserror = "2"
+rand = "0.9"
+# Parse HuggingFace config.json for multi-architecture model loading (Llama /
+# Qwen3-MoE / Gemma 3). Already in the tree transitively via safetensors/tokenizers.
+serde_json = "1"
+clap = { version = "4", features = ["derive"] }
+criterion = "0.8"
+wide = "1.4"
+memmap2 = "0.9"
+# GPU backend (optional)
+wgpu = "29"
+pollster = "0.4"
+bytemuck = { version = "1", features = ["derive"] }
+# Sebastian Aaltonen's `OffsetAllocator` (hard real-time GPU sub-allocator),
+# ported to safe Rust by pcwalton. Used to carve one resident device buffer
+# into many aligned regions instead of allocating a buffer per call.
+offset-allocator = "0.2"
+# Perf instrumentation (optional, behind the `profiling` feature). The library
+# only emits spans/events via `tracing`; binaries install a subscriber.
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+# HTTP serving stack for `arf-serve` (the persistent, resident-model
+# OpenAI-compatible inference server). axum 0.7 + tokio drive the async HTTP
+# layer; the GpuModel is owned by a dedicated OS thread (see arf-serve).
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+# Bridges a `tokio::sync::mpsc::Receiver` into a `Stream` (`ReceiverStream`) so
+# the per-request token channel can drive an axum SSE response — the canonical
+# axum + tokio streaming pattern.
+tokio-stream = "0.1"
+# Terminal UI: ratatui drives the live full-screen frames (pull progress, serve
+# dashboard); crossterm is its backend and also styles the static screens.
+# clap_complete generates shell completion scripts (first-party clap companion).
+ratatui = "0.29"
+crossterm = "0.28"
+clap_complete = "4"
+
+# L358d — TESTS RUN OPTIMISED. Without this the workspace suite is effectively unrunnable, and
+# it was: `gpu_vision_encoder_matches_cpu_real_gguf` burned 32 minutes of CPU in 10 minutes of
+# wall clock at 98.9%, all of it inside `VisionEncoder::mha` — the CPU reference SigLIP tower,
+# 27 layers over a [4096,1152] tensor, at opt-level 0. `sample` showed 1698 of 1698 frames there.
+#
+# CI runs `cargo test --workspace`, so CI was paying it too. This is not a micro-optimisation:
+# an unoptimised f32 attention reference is 10-50x off, which turns a correctness gate that
+# should take seconds into one people learn to skip. A gate people skip is not a gate.
+#
+# opt-level 2, not 3: 3 buys little here and costs compile time on every edit. Overflow checks
+# and debug-assertions stay ON (the default for this profile) — the point is to make the tests
+# fast enough to actually run, never to weaken what they check.
+# LOCAL DISK (2026-09-26): `target/` had grown to 27 GB and the disk filled (1.3 GB free). Full
+# DWARF on every crate is most of it — on macOS every codegen unit also keeps its own `.o` under
+# target/*/deps while any debuginfo is on (split-debuginfo=unpacked). Our crates keep LINE TABLES
+# (a panic or backtrace still names file:line); dependencies keep none (nobody steps into them).
+# `profile.test` inherits these.
+[profile.dev]
+debug = "line-tables-only"
+
+[profile.dev.package."*"]
+debug = false
+
+[profile.test]
+opt-level = 2
+
+# Dependencies of tests get the same treatment. Most of the cost above is in arf-core, which
+# is a path dependency and covered by profile.test, but the GGUF/f16 crates underneath are not.
+[profile.test.package."*"]
+opt-level = 2
+debug = false
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+[profile.bench]
+lto = "thin"

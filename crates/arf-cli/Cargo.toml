@@ -1,0 +1,41 @@
+[package]
+name = "arf-cli"
+description = "Command-line interface for the arf inference engine."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[[bin]]
+name = "arf"
+path = "src/main.rs"
+
+[dependencies]
+arf-core = { path = "../arf-core" }
+arf-gpu = { path = "../arf-gpu" }
+clap = { workspace = true }
+ureq = "2"
+serde_json = { workspace = true }
+# SHA-256 to verify downloaded weights against HuggingFace's content hash
+# (the `X-Linked-Etag` header). Pure Rust, no default `unsafe`.
+sha2 = "0.10"
+tracing-subscriber = { workspace = true, optional = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true }
+clap_complete = { workspace = true }
+
+[features]
+default = []
+# Perf instrumentation: installs a tracing subscriber and turns on the
+# libraries' `profiling` spans/events (CPU spans + GPU timestamp timing).
+profiling = [
+    "arf-core/profiling",
+    "arf-gpu/profiling",
+    "dep:tracing-subscriber",
+]
+
+[lints]
+workspace = true

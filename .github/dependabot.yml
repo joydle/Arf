@@ -1,0 +1,25 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      # Minor and patch updates land together. A semver-major update comes as its own PR, so one
+      # breaking release (rand 0.10 in the first week) does not block every other update.
+      cargo:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      # The Metal island's FFI is matched to these exact versions; the `deps pin guard` CI job
+      # fails if they move. Update them deliberately, re-verified on hardware, never as a bump.
+      - dependency-name: "wgpu*"
+      - dependency-name: "naga"
+      - dependency-name: "objc2*"
+      - dependency-name: "block2"
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

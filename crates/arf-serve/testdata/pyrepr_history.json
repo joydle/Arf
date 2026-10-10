@@ -1,0 +1,3 @@
+[{"role": "user", "content": "Plan the fix."},
+ {"role": "assistant", "content": "Writing the plan.", "tool_calls": [{"id": "call_1", "type": "function", "function": {"name": "todowrite", "arguments": "{\"todos\": [{\"content\": \"fix add()\", \"status\": \"pending\", \"n\": 2.5}], \"dry\": true, \"ratio\": 0.5, \"owner\": null, \"note\": \"it's \\\"q\\\"\", \"big\": 1e16}"}}]},
+ {"role": "tool", "tool_call_id": "call_1", "content": "ok"}]

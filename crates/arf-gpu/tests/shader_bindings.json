@@ -1,0 +1,870 @@
+{
+ "adaln_modulate": [
+  "x",
+  "y",
+  "params",
+  "d"
+ ],
+ "add": [
+  "a",
+  "b",
+  "d"
+ ],
+ "add_bias": [
+  "x",
+  "bias",
+  "d"
+ ],
+ "add_norm": [
+  "hidden",
+  "residual",
+  "weight",
+  "normed",
+  "d"
+ ],
+ "attention": [
+  "q",
+  "key_pool",
+  "value_pool",
+  "out",
+  "slots",
+  "d"
+ ],
+ "attention_batched": [
+  "q",
+  "key_pool",
+  "value_pool",
+  "out",
+  "slots",
+  "row_meta",
+  "d"
+ ],
+ "attention_gqa": [
+  "q",
+  "key_pool",
+  "value_pool",
+  "out",
+  "slots",
+  "row_meta",
+  "d"
+ ],
+ "attention_splitk": [
+  "q",
+  "key_pool",
+  "value_pool",
+  "partials",
+  "slots",
+  "d"
+ ],
+ "attention_splitk_combine": [
+  "partials",
+  "out",
+  "d"
+ ],
+ "attention_tq": [
+  "q",
+  "key_codes",
+  "value_codes",
+  "out",
+  "slots",
+  "d",
+  "key_norms",
+  "value_norms",
+  "levels"
+ ],
+ "attention_tq_par": [
+  "q",
+  "key_codes",
+  "value_codes",
+  "out",
+  "slots",
+  "d",
+  "key_norms",
+  "value_norms",
+  "levels"
+ ],
+ "attn_gate_mul": [
+  "attn",
+  "gate",
+  "d"
+ ],
+ "conv_epilogue": [
+  "mm",
+  "bias",
+  "out",
+  "d"
+ ],
+ "dit_attn": [
+  "q",
+  "k",
+  "v",
+  "out",
+  "d"
+ ],
+ "double_test": [
+  "inp",
+  "out"
+ ],
+ "embed": [
+  "table",
+  "out",
+  "d"
+ ],
+ "embed_bf16": [
+  "table",
+  "out",
+  "d"
+ ],
+ "embed_q4k": [
+  "table",
+  "out",
+  "d"
+ ],
+ "embed_tok": [
+  "table",
+  "out",
+  "tok",
+  "d"
+ ],
+ "embed_tok_bf16": [
+  "table",
+  "out",
+  "tok",
+  "d"
+ ],
+ "embed_tok_q4k": [
+  "table",
+  "out",
+  "tok",
+  "d"
+ ],
+ "flux_rope_3axis": [
+  "q",
+  "k",
+  "cos",
+  "sin",
+  "d"
+ ],
+ "gated_delta_net": [
+  "q",
+  "k",
+  "v",
+  "g",
+  "beta",
+  "S",
+  "o",
+  "d"
+ ],
+ "gated_delta_net_b": [
+  "q",
+  "k",
+  "v",
+  "g",
+  "beta",
+  "S",
+  "o",
+  "d"
+ ],
+ "gdn_g_decay": [
+  "g_out",
+  "alpha",
+  "ssm_dt",
+  "ssm_a",
+  "d"
+ ],
+ "gdn_g_decay_b": [
+  "g_out",
+  "alpha",
+  "ssm_dt",
+  "ssm_a",
+  "d"
+ ],
+ "gdn_l2_norm": [
+  "x",
+  "d"
+ ],
+ "gdn_l2_norm_b": [
+  "x",
+  "d"
+ ],
+ "gdn_sigmoid_out": [
+  "out",
+  "src",
+  "d"
+ ],
+ "gdn_sigmoid_out_b": [
+  "out",
+  "src",
+  "d"
+ ],
+ "gdn_tile": [
+  "conv_out",
+  "q_rep",
+  "k_rep",
+  "v_out",
+  "d"
+ ],
+ "gdn_tile_b": [
+  "conv_out",
+  "q_rep",
+  "k_rep",
+  "v_out",
+  "d",
+  "d2"
+ ],
+ "geglu": [
+  "gate",
+  "up",
+  "out",
+  "d"
+ ],
+ "gelu_tanh": [
+  "x",
+  "d"
+ ],
+ "group_norm": [
+  "x",
+  "weight",
+  "bias",
+  "d"
+ ],
+ "im2col": [
+  "inp",
+  "cols",
+  "d"
+ ],
+ "kv_scatter": [
+  "new_k",
+  "new_v",
+  "slots",
+  "key_pool",
+  "value_pool",
+  "d"
+ ],
+ "kv_scatter_tq": [
+  "new_k",
+  "new_v",
+  "slots",
+  "key_codes",
+  "value_codes",
+  "key_norms",
+  "value_norms",
+  "levels",
+  "d"
+ ],
+ "layernorm_bias": [
+  "x",
+  "weight",
+  "bias",
+  "out",
+  "d"
+ ],
+ "layernorm_plain": [
+  "x",
+  "out",
+  "d"
+ ],
+ "matmul": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_coop": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_coop_q4": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_coop_q4_rb2": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_coop_q4_rb2_cb4": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_coop_q4_rb2_cb4_dk2": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_coop_q4k": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_coop_q4k_rb2": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_coop_q4k_rb2_cb2": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_coop_q4k_rb2_cb4": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_coop_q4k_rb2_cb4_dk2": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_coop_q4k_rb2_cb8": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_coop_q4ks": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins",
+  "dd"
+ ],
+ "matmul_coop_q8": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_coop_q8_0": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "dscale"
+ ],
+ "matmul_coop_q8_rb2": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_coop_q8_rb2_cb4": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_coop_q8_rb2_cb4_dk2": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_coop_rb2": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_coop_rb2_cb4": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_coop_rb2_cb4_dk2": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_vec": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_vec_batch": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "matmul_vec_moe": [
+  "a",
+  "b",
+  "c",
+  "d",
+  "ids",
+  "wts"
+ ],
+ "matmul_vec_moe_batch_gu": [
+  "a",
+  "b",
+  "c",
+  "d",
+  "ids"
+ ],
+ "matmul_vec_moe_batch_gu_b": [
+  "a",
+  "b",
+  "c",
+  "d",
+  "ids"
+ ],
+ "matmul_vec_moe_down_reduce": [
+  "a",
+  "b",
+  "c",
+  "d",
+  "ids",
+  "wts"
+ ],
+ "matmul_vec_moe_down_reduce_b": [
+  "a",
+  "b",
+  "c",
+  "d",
+  "ids",
+  "wts"
+ ],
+ "matmul_vec_moe_q4": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts"
+ ],
+ "matmul_vec_moe_q4_batch_gu": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids"
+ ],
+ "matmul_vec_moe_q4_down_reduce": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts"
+ ],
+ "matmul_vec_moe_q4k": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts",
+  "mins"
+ ],
+ "matmul_vec_moe_q4k_batch_gu": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "mins"
+ ],
+ "matmul_vec_moe_q4k_down_reduce": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts",
+  "mins"
+ ],
+ "matmul_vec_moe_q4ks": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_moe_q4ks_batch_gu": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_moe_q4ks_batch_gu_b": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_moe_q4ks_batch_gu_b_v2": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_moe_q4ks_down_reduce": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_moe_q4ks_down_reduce_b": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "ids",
+  "wts",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_q3k": [
+  "a",
+  "ql",
+  "qh",
+  "c",
+  "d",
+  "scales",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_q3k_batch": [
+  "a",
+  "ql",
+  "qh",
+  "c",
+  "d",
+  "scales",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_q4": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_vec_q4_batch": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_vec_q4_mc": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales"
+ ],
+ "matmul_vec_q4k": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_vec_q4k_batch": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_vec_q4k_ggml": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_vec_q4k_mr": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_vec_q4k_sg": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins"
+ ],
+ "matmul_vec_q4ks": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_q4ks_batch": [
+  "a",
+  "codes",
+  "c",
+  "d",
+  "scales",
+  "mins",
+  "dd"
+ ],
+ "matmul_vec_q8": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_vec_q8_batch": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_vec_q8_sg": [
+  "a",
+  "q",
+  "c",
+  "d",
+  "scale"
+ ],
+ "matmul_vec_sg": [
+  "a",
+  "b",
+  "c",
+  "d"
+ ],
+ "moe_route": [
+  "logits",
+  "ids",
+  "weights",
+  "d"
+ ],
+ "moe_route_b": [
+  "logits",
+  "ids",
+  "weights",
+  "d"
+ ],
+ "mul": [
+  "a",
+  "b",
+  "d"
+ ],
+ "qk_norm": [
+  "q",
+  "k",
+  "q_weight",
+  "k_weight",
+  "d"
+ ],
+ "qkv_norm": [
+  "q",
+  "k",
+  "v",
+  "q_weight",
+  "k_weight",
+  "d"
+ ],
+ "quick_gelu": [
+  "x",
+  "d"
+ ],
+ "rmsnorm": [
+  "x",
+  "weight",
+  "y",
+  "d"
+ ],
+ "rmsnorm_add": [
+  "src",
+  "weight",
+  "hidden",
+  "d"
+ ],
+ "rope": [
+  "x",
+  "cos",
+  "sin",
+  "positions",
+  "d"
+ ],
+ "rope_qk": [
+  "q",
+  "k",
+  "cos",
+  "sin",
+  "positions",
+  "d"
+ ],
+ "rope_qk_interleaved": [
+  "q",
+  "k",
+  "cos",
+  "sin",
+  "positions",
+  "d"
+ ],
+ "row_bias": [
+  "x",
+  "bias",
+  "d"
+ ],
+ "sample": [
+  "logits",
+  "out",
+  "d"
+ ],
+ "sample_batched": [
+  "logits",
+  "out",
+  "d"
+ ],
+ "sample_stochastic": [
+  "logits",
+  "out",
+  "d"
+ ],
+ "scale_inplace": [
+  "x",
+  "d"
+ ],
+ "silu": [
+  "x",
+  "d"
+ ],
+ "slice_cols": [
+  "a",
+  "b",
+  "d"
+ ],
+ "softcap": [
+  "logits",
+  "d"
+ ],
+ "ssm_conv1d": [
+  "conv_in",
+  "conv_kernel",
+  "conv_state",
+  "conv_out",
+  "d"
+ ],
+ "ssm_conv1d_b": [
+  "conv_in",
+  "conv_kernel",
+  "conv_state",
+  "conv_out",
+  "d"
+ ],
+ "swiglu": [
+  "gate",
+  "up",
+  "out",
+  "d"
+ ],
+ "text_attn": [
+  "q",
+  "k",
+  "v",
+  "out",
+  "rel_bias",
+  "d"
+ ],
+ "upsample_nearest": [
+  "inp",
+  "out",
+  "d"
+ ],
+ "v_norm": [
+  "v",
+  "d"
+ ],
+ "vae_attn": [
+  "q",
+  "k",
+  "v",
+  "out",
+  "d"
+ ],
+ "vision_attn": [
+  "q",
+  "k",
+  "v",
+  "out",
+  "d"
+ ]
+}

@@ -1,0 +1,99 @@
+<|im_start|>system
+You are a coding agent.
+
+You have access to the following functions:
+
+<tools>
+<function>
+<name>read</name>
+<description>Read a file</description>
+<parameters>
+<parameter>
+<name>path</name>
+<type>string</type>
+</parameter>
+<required>[`path`]</required>
+</parameters>
+</function>
+<function>
+<name>edit</name>
+<description>Replace oldText with newText in a file</description>
+<parameters>
+<parameter>
+<name>path</name>
+<type>string</type>
+</parameter>
+<parameter>
+<name>oldText</name>
+<type>string</type>
+</parameter>
+<parameter>
+<name>newText</name>
+<type>string</type>
+</parameter>
+<required>[`path`, `oldText`, `newText`]</required>
+</parameters>
+</function>
+</tools>
+
+If you choose to call a function ONLY reply in the following format with NO suffix:
+
+<tool_call>
+<function=example_function_name>
+<parameter=example_parameter_1>
+value_1
+</parameter>
+<parameter=example_parameter_2>
+This is the value for the second parameter
+that can span
+multiple lines
+</parameter>
+</function>
+</tool_call>
+
+<IMPORTANT>
+Reminder:
+- Function calls MUST follow the specified format: an inner <function=...></function> block must be nested within <tool_call></tool_call> XML tags
+- Required parameters MUST be specified
+- You may provide optional reasoning for your function call in natural language BEFORE the function call, but NOT after
+- If there is no function call available, answer the question like normal with your current knowledge and do not tell the user about function calls
+</IMPORTANT><|im_end|>
+<|im_start|>user
+calc.py has a bug in add(). Fix it.<|im_end|>
+<|im_start|>assistant
+<tool_call>
+<function=read>
+<parameter=path>
+calc.py
+</parameter>
+</function>
+</tool_call><|im_end|>
+<|im_start|>user
+<tool_response>
+def add(a, b):
+    return a - b
+
+</tool_response>
+<|im_end|>
+<|im_start|>assistant
+The bug is the minus sign.
+
+<tool_call>
+<function=edit>
+<parameter=path>
+calc.py
+</parameter>
+<parameter=oldText>
+return a - b
+</parameter>
+<parameter=newText>
+return a + b
+</parameter>
+</function>
+</tool_call><|im_end|>
+<|im_start|>user
+<tool_response>
+Edited calc.py
+</tool_response>
+<|im_end|>
+<|im_start|>assistant

@@ -1,0 +1,40 @@
+[package]
+name = "arf-router"
+description = "Stateless reactor-based HTTP router that fronts several arf-serve replicas. Pure proxy; no engine dependencies."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+readme = "README.md"
+keywords.workspace = true
+categories.workspace = true
+# Not published to crates.io.
+publish = false
+
+[[bin]]
+name = "arf-router"
+path = "src/main.rs"
+
+[dependencies]
+axum = { workspace = true }
+tokio = { workspace = true }
+tokio-stream = { workspace = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = { workspace = true }
+clap = { workspace = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+futures-util = "0.3"
+async-stream = "0.3"
+bytes = "1"
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+# Lock-free reader for the live replica list (ArcSwap).
+# Read-side is a single Acquire load with no contention; much cheaper than RwLock.
+arc-swap = "1"
+# Async trait impls for the Discovery trait.
+async-trait = "0.1"
+# anyhow::Result for discovery impls (maps cleanly onto reqwest/serde errors).
+anyhow = "1"
+
+[lints]
+workspace = true

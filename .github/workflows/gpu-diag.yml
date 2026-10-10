@@ -1,0 +1,56 @@
+# Run one GPU test repeatedly on a hosted macOS runner, at any branch (manual trigger only).
+# For failures that show up only on CI's GPU: `gh workflow run gpu-diag.yml --ref <branch>
+#   -f test=<integration test target> -f filter=<test name> -f repeats=5 -f env="K=V K2=V2"`.
+name: GPU diagnostic
+
+on:
+  workflow_dispatch:
+    inputs:
+      test:
+        description: Integration test target in arf-gpu (e.g. qwen_audio_gpu)
+        required: true
+        type: string
+      filter:
+        description: Test name filter
+        required: false
+        type: string
+        default: ""
+      repeats:
+        description: How many times to run it
+        required: false
+        type: string
+        default: "3"
+      env:
+        description: Extra environment, space-separated K=V pairs
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  diag:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Device
+        run: system_profiler SPDisplaysDataType | sed -n '1,20p'
+      - name: Run the test repeatedly
+        env:
+          TEST: ${{ inputs.test }}
+          FILTER: ${{ inputs.filter }}
+          REPEATS: ${{ inputs.repeats }}
+          EXTRA_ENV: ${{ inputs.env }}
+        run: |
+          for kv in $EXTRA_ENV; do export "$kv"; done
+          cargo test -p arf-gpu --test "$TEST" --locked --no-run
+          fails=0
+          for i in $(seq 1 "$REPEATS"); do
+            echo "::group::run $i"
+            cargo test -p arf-gpu --test "$TEST" --locked -- --nocapture --include-ignored $FILTER || fails=$((fails+1))
+            echo "::endgroup::"
+          done
+          echo "failed $fails of $REPEATS"

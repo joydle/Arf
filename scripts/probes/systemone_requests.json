@@ -1,0 +1,773 @@
+[
+ {
+  "name": "basic",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "instructions": "How urgent is this?",
+     "criteria": [
+      "can wait",
+      "this week",
+      "today",
+      "right now"
+     ]
+    },
+    "angry": {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   }
+  }
+ },
+ {
+  "name": "json_state_object",
+  "request": {
+   "state": {
+    "ticket": "I was charged twice for my order last week and nobody has replied.",
+    "plan": "pro"
+   },
+   "questions": {
+    "refund": {
+     "type": "noul",
+     "instructions": "Is a refund requested?",
+     "criteria": {
+      "false": "no refund is asked",
+      "true": "a refund is asked"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "json_state_string",
+  "request": {
+   "state": "{\"ticket\": \"I was charged twice for my order last week and nobody has replied.\", \"plan\": \"pro\"}",
+   "questions": {
+    "refund": {
+     "type": "noul",
+     "instructions": "Is a refund requested?",
+     "criteria": {
+      "false": "no refund is asked",
+      "true": "a refund is asked"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "unicode",
+  "request": {
+   "state": "Ich wurde zweimal belastet — ärgerlich! 退款 🙂 \"quoted\" \\ back\tslash\nnew line",
+   "questions": {
+    "sprache": {
+     "type": "choice",
+     "instructions": "Welche Sprache? 语言",
+     "criteria": {
+      "deutsch": "Deutsch — ä ö ü",
+      "englisch": "English",
+      "中文": null
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "nested_object",
+  "request": {
+   "state": {
+    "customer": {
+     "name": "Ada",
+     "tier": "gold",
+     "tags": [
+      "vip",
+      "eu"
+     ]
+    },
+    "orders": [
+     {
+      "id": 1,
+      "paid": true,
+      "refund": null
+     },
+     {
+      "id": 2,
+      "paid": false
+     }
+    ],
+    "empty": {},
+    "none": []
+   },
+   "questions": {
+    "vip": {
+     "type": "noul",
+     "instructions": "Is the customer a VIP?"
+    },
+    "n": {
+     "type": "score",
+     "instructions": "How many orders need attention?",
+     "criteria": [
+      "none",
+      "one",
+      "several"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "name": "floats",
+  "request": {
+   "state": {
+    "amount": 0.1,
+    "total": 2.0,
+    "pi": 3.14159265,
+    "tiny": 1e-07,
+    "big": 12345678.9,
+    "neg": -0.5,
+    "int": 42
+   },
+   "questions": {
+    "high": {
+     "type": "noul",
+     "instructions": "Is the amount high?",
+     "criteria": {
+      "true": "above 100",
+      "false": "100 or less"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "array_state",
+  "request": {
+   "state": [
+    {
+     "role": "user",
+     "content": "My parcel never arrived."
+    },
+    {
+     "role": "assistant",
+     "content": "Sorry to hear that."
+    },
+    {
+     "role": "user",
+     "content": "Where is it?"
+    }
+   ],
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "number_state",
+  "request": {
+   "state": 42,
+   "questions": {
+    "answer": {
+     "type": "noul",
+     "instructions": "Is this the answer to everything?"
+    }
+   }
+  }
+ },
+ {
+  "name": "choice_2",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "Pick one.",
+     "criteria": {
+      "opt0": "option number 0",
+      "opt1": null
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "choice_5",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "Pick one.",
+     "criteria": {
+      "opt0": "option number 0",
+      "opt1": null,
+      "opt2": "option number 2",
+      "opt3": null,
+      "opt4": "option number 4"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "choice_10",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "Pick one.",
+     "criteria": {
+      "opt0": "option number 0",
+      "opt1": null,
+      "opt2": "option number 2",
+      "opt3": null,
+      "opt4": "option number 4",
+      "opt5": null,
+      "opt6": "option number 6",
+      "opt7": null,
+      "opt8": "option number 8",
+      "opt9": null
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "choice_11",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "Pick one.",
+     "criteria": {
+      "opt0": "option number 0",
+      "opt1": null,
+      "opt2": "option number 2",
+      "opt3": null,
+      "opt4": "option number 4",
+      "opt5": null,
+      "opt6": "option number 6",
+      "opt7": null,
+      "opt8": "option number 8",
+      "opt9": null,
+      "opt10": "option number 10"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "choice_52",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "Pick one.",
+     "criteria": {
+      "opt0": "option number 0",
+      "opt1": null,
+      "opt2": "option number 2",
+      "opt3": null,
+      "opt4": "option number 4",
+      "opt5": null,
+      "opt6": "option number 6",
+      "opt7": null,
+      "opt8": "option number 8",
+      "opt9": null,
+      "opt10": "option number 10",
+      "opt11": null,
+      "opt12": "option number 12",
+      "opt13": null,
+      "opt14": "option number 14",
+      "opt15": null,
+      "opt16": "option number 16",
+      "opt17": null,
+      "opt18": "option number 18",
+      "opt19": null,
+      "opt20": "option number 20",
+      "opt21": null,
+      "opt22": "option number 22",
+      "opt23": null,
+      "opt24": "option number 24",
+      "opt25": null,
+      "opt26": "option number 26",
+      "opt27": null,
+      "opt28": "option number 28",
+      "opt29": null,
+      "opt30": "option number 30",
+      "opt31": null,
+      "opt32": "option number 32",
+      "opt33": null,
+      "opt34": "option number 34",
+      "opt35": null,
+      "opt36": "option number 36",
+      "opt37": null,
+      "opt38": "option number 38",
+      "opt39": null,
+      "opt40": "option number 40",
+      "opt41": null,
+      "opt42": "option number 42",
+      "opt43": null,
+      "opt44": "option number 44",
+      "opt45": null,
+      "opt46": "option number 46",
+      "opt47": null,
+      "opt48": "option number 48",
+      "opt49": null,
+      "opt50": "option number 50",
+      "opt51": null
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "score_3",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "sev": {
+     "type": "score",
+     "instructions": "How severe is this?",
+     "criteria": [
+      "low",
+      "medium",
+      "high"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "name": "noul_criteria_partial",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "noul",
+     "instructions": "Was the order paid?",
+     "criteria": {
+      "true": "the customer paid"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "nonstring_fields",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": {
+      "ask": "which team",
+      "lang": "en"
+     },
+     "criteria": {
+      "a": {
+       "team": "billing",
+       "weight": 1.5
+      },
+      "b": 0,
+      "c": "",
+      "d": [
+       "x",
+       "y"
+      ]
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "err_no_state",
+  "request": {
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "instructions": "How urgent is this?",
+     "criteria": [
+      "can wait",
+      "this week",
+      "today",
+      "right now"
+     ]
+    },
+    "angry": {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   }
+  }
+ },
+ {
+  "name": "err_no_questions",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied."
+  }
+ },
+ {
+  "name": "err_empty_questions",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {}
+  }
+ },
+ {
+  "name": "err_unknown_type",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "unknown",
+     "instructions": "x"
+    }
+   }
+  }
+ },
+ {
+  "name": "err_no_instructions",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "noul"
+    }
+   }
+  }
+ },
+ {
+  "name": "err_choice_no_criteria",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "x"
+    }
+   }
+  }
+ },
+ {
+  "name": "err_choice_empty_criteria",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "x",
+     "criteria": {}
+    }
+   }
+  }
+ },
+ {
+  "name": "err_score_one_level",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "score",
+     "instructions": "x",
+     "criteria": [
+      "only one"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "name": "err_score_11_levels",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "score",
+     "instructions": "x",
+     "criteria": [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "name": "err_noul_criteria_array",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "noul",
+     "instructions": "x",
+     "criteria": [
+      "no",
+      "yes"
+     ]
+    }
+   }
+  }
+ },
+ {
+  "name": "err_question_not_object",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": "what?"
+   }
+  }
+ },
+ {
+  "name": "err_questions_array",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": [
+    {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   ]
+  }
+ },
+ {
+  "name": "err_null_state",
+  "request": {
+   "state": null,
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "instructions": "How urgent is this?",
+     "criteria": [
+      "can wait",
+      "this week",
+      "today",
+      "right now"
+     ]
+    },
+    "angry": {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   }
+  }
+ },
+ {
+  "name": "err_choice_53",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "q": {
+     "type": "choice",
+     "instructions": "Pick one.",
+     "criteria": {
+      "opt0": "option number 0",
+      "opt1": null,
+      "opt2": "option number 2",
+      "opt3": null,
+      "opt4": "option number 4",
+      "opt5": null,
+      "opt6": "option number 6",
+      "opt7": null,
+      "opt8": "option number 8",
+      "opt9": null,
+      "opt10": "option number 10",
+      "opt11": null,
+      "opt12": "option number 12",
+      "opt13": null,
+      "opt14": "option number 14",
+      "opt15": null,
+      "opt16": "option number 16",
+      "opt17": null,
+      "opt18": "option number 18",
+      "opt19": null,
+      "opt20": "option number 20",
+      "opt21": null,
+      "opt22": "option number 22",
+      "opt23": null,
+      "opt24": "option number 24",
+      "opt25": null,
+      "opt26": "option number 26",
+      "opt27": null,
+      "opt28": "option number 28",
+      "opt29": null,
+      "opt30": "option number 30",
+      "opt31": null,
+      "opt32": "option number 32",
+      "opt33": null,
+      "opt34": "option number 34",
+      "opt35": null,
+      "opt36": "option number 36",
+      "opt37": null,
+      "opt38": "option number 38",
+      "opt39": null,
+      "opt40": "option number 40",
+      "opt41": null,
+      "opt42": "option number 42",
+      "opt43": null,
+      "opt44": "option number 44",
+      "opt45": null,
+      "opt46": "option number 46",
+      "opt47": null,
+      "opt48": "option number 48",
+      "opt49": null,
+      "opt50": "option number 50",
+      "opt51": null,
+      "opt52": "option number 52"
+     }
+    }
+   }
+  }
+ },
+ {
+  "name": "err_images_not_array",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "instructions": "How urgent is this?",
+     "criteria": [
+      "can wait",
+      "this week",
+      "today",
+      "right now"
+     ]
+    },
+    "angry": {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   },
+   "images": "data:image/png;base64,AAAA"
+  }
+ },
+ {
+  "name": "err_image_not_data_url",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "instructions": "How urgent is this?",
+     "criteria": [
+      "can wait",
+      "this week",
+      "today",
+      "right now"
+     ]
+    },
+    "angry": {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   },
+   "images": [
+    "https://example.com/image.png"
+   ]
+  }
+ },
+ {
+  "name": "err_images_unsupported",
+  "request": {
+   "state": "I was charged twice for my order last week and nobody has replied.",
+   "questions": {
+    "route": {
+     "type": "choice",
+     "instructions": "Which team should handle this?",
+     "criteria": {
+      "billing": "payments and refunds",
+      "shipping": null,
+      "technical": null
+     }
+    },
+    "urgency": {
+     "type": "score",
+     "instructions": "How urgent is this?",
+     "criteria": [
+      "can wait",
+      "this week",
+      "today",
+      "right now"
+     ]
+    },
+    "angry": {
+     "type": "noul",
+     "instructions": "Is the customer angry?"
+    }
+   },
+   "images": [
+    "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+   ]
+  }
+ },
+ {
+  "name": "err_malformed_json",
+  "raw_body": "{\"state\": \"x\", \"questions\": "
+ }
+]
