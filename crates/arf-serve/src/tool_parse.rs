@@ -137,7 +137,9 @@ pub(crate) fn qwen_xml_calls(
         // A function name never spans lines; a `>` further away means this was not a header.
         if name.is_empty()
             || name.contains('\n')
-            || !(body.trim().is_empty() || next_is(body, &[P_OPEN, FN_CLOSE, TC_CLOSE]))
+            || !(body.trim().is_empty()
+                || next_is(body, &[P_OPEN, FN_CLOSE, TC_CLOSE])
+                || near_miss_param(body.trim_start(), tools, name).is_some())
         {
             pos = name_start;
             continue;
@@ -145,20 +147,31 @@ pub(crate) fn qwen_xml_calls(
         let mut args: Vec<(String, String)> = Vec::new();
         loop {
             let b = body.trim_start();
-            let Some(p) = b.strip_prefix(P_OPEN) else {
+            let (pname, vstart, literal) = if let Some(p) = b.strip_prefix(P_OPEN) {
+                let Some(gt) = p.find('>') else {
+                    body = b;
+                    break;
+                };
+                (p[..gt].trim().to_string(), &p[gt + 1..], false)
+            } else if let Some(near) = near_miss_param(b, tools, name) {
+                near
+            } else {
                 body = b;
                 break;
             };
-            let Some(gt) = p.find('>') else {
-                body = b;
-                break;
-            };
-            let pname = p[..gt].trim().to_string();
-            let vstart = &p[gt + 1..];
             let (e, resume) = param_value_end(vstart);
             let (raw, next) = (&vstart[..e], &vstart[resume..]);
             let v = raw.strip_prefix('\n').unwrap_or(raw);
             let v = v.strip_suffix('\n').unwrap_or(v);
+            // `KEY": "VALUE"`: the value is a JSON literal on the line.
+            let decoded = literal
+                .then(|| serde_json::from_str::<serde_json::Value>(v.trim()).ok())
+                .flatten();
+            let v = match &decoded {
+                Some(serde_json::Value::String(t)) => t.as_str(),
+                _ if literal => v.trim(),
+                _ => v,
+            };
             let json = if param_is_string(tools, name, &pname) {
                 serde_json::to_string(v).unwrap_or_else(|_| "\"\"".into())
             } else {
@@ -188,6 +201,48 @@ pub(crate) fn qwen_xml_calls(
     }
     let lead_end = lead_end?;
     Some((calls, reply[..lead_end].trim().to_string()))
+}
+
+/// NEAR-MISS PARAMETER OPENINGS (2026-10-11): a parameter the model opened in another form than
+/// `<parameter=KEY>`, read as one when KEY is a parameter of `function`'s schema — so prose is never
+/// read as a call. Returns the key, the text after the opening (as `<parameter=KEY>` leaves it),
+/// and whether the value is a JSON literal on that line. Both forms are verbatim from the 1.0.0
+/// release test, where each was rejected, sent to the agent as raw text ending in `</parameter>`,
+/// and ended its session with the task undone:
+///
+/// ```text
+/// <function=Bash>               <function=bash>
+/// <command>                     command": "python3 test_calc.py"
+/// python3 test_calc.py          </parameter>
+/// </parameter>                  </function>
+/// ```
+fn near_miss_param<'a>(
+    b: &'a str,
+    tools: &[Tool],
+    function: &str,
+) -> Option<(String, &'a str, bool)> {
+    let line = &b[..b.find('\n').unwrap_or(b.len())];
+    if let Some(tag) = line.strip_prefix('<').filter(|t| !t.starts_with('/')) {
+        let gt = tag.find('>')?;
+        let key = tag[..gt].trim();
+        return param_known(tools, function, key)
+            .then(|| (key.to_string(), &b[1 + gt + 1..], false));
+    }
+    let (key, after) = line.trim_start_matches('"').split_once("\":")?;
+    let key = key.trim();
+    let consumed = line.len() - after.len();
+    param_known(tools, function, key).then(|| (key.to_string(), &b[consumed..], true))
+}
+
+/// `param` is in `function`'s schema (`properties`).
+fn param_known(tools: &[Tool], function: &str, param: &str) -> bool {
+    !param.is_empty()
+        && tools
+            .iter()
+            .find(|t| t.function.name == function)
+            .and_then(|t| t.function.parameters.as_ref())
+            .and_then(|p| p.get("properties"))
+            .is_some_and(|p| p.get(param).is_some())
 }
 
 /// Where the parameter value `v` ends, and where the text after it resumes. See
@@ -811,6 +866,34 @@ mod tests {
 
     fn args(c: &ToolCall) -> serde_json::Value {
         serde_json::from_str(&c.function.arguments).expect("arguments are JSON")
+    }
+
+    /// The two near-miss forms the 1.0.0 release test captured (`near_miss_param`) are read as the
+    /// calls they meant; the same shapes with a key the tool does not have are not calls.
+    #[test]
+    fn near_miss_parameters_of_a_known_key_are_read() {
+        let bare = "<tool_call>\n<function=bash>\n<command>\npython3 test_calc.py\n</parameter>\n\
+<parameter=timeout>\n30\n</parameter>\n</function>\n</tool_call>";
+        let (calls, lead) = parse_qwen_xml(bare, &tools()).expect("a call");
+        assert_eq!(lead, "");
+        assert_eq!(calls.len(), 1);
+        assert_eq!(
+            args(&calls[0]),
+            serde_json::json!({"command": "python3 test_calc.py", "timeout": 30})
+        );
+        let half_json = "<tool_call>\n<function=bash>\ncommand\": \"python3 test_calc.py\"\n</parameter>\n</function>\n</tool_call>";
+        let (calls, _) = parse_qwen_xml(half_json, &tools()).expect("a call");
+        assert_eq!(
+            args(&calls[0]),
+            serde_json::json!({"command": "python3 test_calc.py"})
+        );
+        // Unknown keys: neither form makes a call out of it.
+        for reply in [
+            "<tool_call>\n<function=bash>\n<script>\nls\n</parameter>\n</function>\n</tool_call>",
+            "<tool_call>\n<function=bash>\nscript\": \"ls\"\n</parameter>\n</function>\n</tool_call>",
+        ] {
+            assert!(parse_qwen_xml(reply, &tools()).is_none_or(|(c, _)| c.is_empty()), "{reply}");
+        }
     }
 
     /// A real Qwen3.8-shaped reply: prose (with braces) before the call, then an edit whose
