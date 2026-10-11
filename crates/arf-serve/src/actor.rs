@@ -988,6 +988,37 @@ impl DecodeRr {
     }
 }
 
+/// THE LOOP GUARD (2026-10-11). With an omitted temperature now sampled at the model's own
+/// (`http::build_sampling`), a turn of the 27B can loop: the 1.0.0 release test saw turns of
+/// 10,000-18,000 tokens repeating one passage. A repetition penalty on every request stops that and
+/// makes agents 3-4x slower (measured the same day with 1.1 always on: Claude Code's real task past
+/// 12 min against 208 s without), since it lowers the very tokens the draft proposes and takes the
+/// on-GPU sampling path off. So it is turned on only for an answer whose tail has become periodic
+/// (`runaway_period`), from that token on; every other answer is untouched.
+const GUARD_EVERY: usize = 32;
+const GUARD_PENALTY: f32 = 1.1;
+const GUARD_WINDOW: usize = 256;
+
+/// The period `p` of `tokens`' tail when it repeats: over the last `max(4p, 128)` tokens (at most
+/// 2,048), at least 90% equal the token `p` before. Shorter periods are tried first. `None` for
+/// fewer than 256 tokens.
+fn runaway_period(tokens: &[u32]) -> Option<usize> {
+    if tokens.len() < 256 {
+        return None;
+    }
+    (1..=512).find(|&p| {
+        let w = (4 * p).clamp(128, 2048);
+        if tokens.len() < w + p {
+            return false;
+        }
+        let tail = tokens.len() - w;
+        let same = (tail..tokens.len())
+            .filter(|&i| tokens[i] == tokens[i - p])
+            .count();
+        same * 10 >= w * 9
+    })
+}
+
 /// Per-request state the actor tracks between steps.
 struct JobState {
     params: SamplingParams,
@@ -1000,6 +1031,8 @@ struct JobState {
     /// Tokens emitted so far for this sequence (post-prompt). Fed to the
     /// constraint's state machine at each decode step so it can track JSON structure.
     generated: Vec<u32>,
+    /// The loop guard (`runaway_period`) has turned this request's repetition penalty on.
+    guard_on: bool,
     /// `Job::background`.
     background: bool,
     /// L229 — speculative drafting state: the realized token history (prompt + emitted)
@@ -2477,12 +2510,26 @@ fn actor_loop(
             .map(|(i, sp)| (sp.id, i))
             .collect();
         for out in outs {
-            // Track generated tokens when the NEXT step needs the history: a grammar
-            // constraint's state machine, OR an active repetition penalty. Zero
-            // overhead for plain greedy/stochastic requests (neither set).
+            // Track generated tokens: a grammar constraint's state machine and a repetition
+            // penalty read them, and so does the loop guard (`runaway_period`), on every request.
             if let Some(j) = jobs.get_mut(&out.id) {
-                if j.constraint.is_some() || j.params.has_repetition_penalty() {
-                    j.generated.push(out.token);
+                j.generated.push(out.token);
+                if !j.guard_on
+                    && !j.params.has_repetition_penalty()
+                    && j.generated.len() % GUARD_EVERY == 0
+                {
+                    if let Some(period) = runaway_period(&j.generated) {
+                        j.guard_on = true;
+                        j.params.repetition_penalty = GUARD_PENALTY;
+                        j.params.repeat_last_n = GUARD_WINDOW;
+                        eprintln!(
+                            "[guard] request {}: output repeats every {period} tokens at {} \
+                             tokens; repetition penalty {GUARD_PENALTY} (last {GUARD_WINDOW}) \
+                             for the rest of this answer",
+                            out.id,
+                            j.generated.len()
+                        );
+                    }
                 }
             }
 
@@ -2664,6 +2711,7 @@ fn admit(
             top_logprobs: job.top_logprobs,
             constraint,
             generated: Vec::new(),
+            guard_on: false,
             background: job.background,
             // L229 — seed the drafter with the PROMPT so a request that quotes its own
             // context (RAG, "rewrite this", a coding agent applying an edit) can draft from
@@ -2895,6 +2943,41 @@ fn demux(
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod loop_guard_tests {
+    use super::*;
+
+    #[test]
+    fn a_repeating_passage_is_caught_and_varied_output_is_not() {
+        // 300 tokens of varied output, then a 37-token passage repeated with one token in 20 off.
+        let mut t: Vec<u32> = (0..300u32).map(|i| i * 7919 % 5003).collect();
+        let passage: Vec<u32> = (0..37u32).map(|i| 9000 + i).collect();
+        for r in 0..20 {
+            for (k, &x) in passage.iter().enumerate() {
+                t.push(if (r * 37 + k) % 20 == 0 { 1 } else { x });
+            }
+        }
+        // Caught, at the passage's period or a multiple of it (noise can hide the shortest).
+        assert!(
+            runaway_period(&t).is_some_and(|p| p % 37 == 0),
+            "{:?}",
+            runaway_period(&t)
+        );
+        // Code-like output: lines that share a shape but not their tokens.
+        let varied: Vec<u32> = (0..2000u32)
+            .map(|i| {
+                if i % 12 == 0 {
+                    10
+                } else {
+                    100 + i % 97 + (i / 12) % 13
+                }
+            })
+            .collect();
+        assert_eq!(runaway_period(&varied), None);
+        assert_eq!(runaway_period(&t[..200]), None, "too short to judge");
     }
 }
 
