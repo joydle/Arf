@@ -73,7 +73,7 @@ tokio-stream = "0.1"
 # Terminal UI: ratatui drives the live full-screen frames (pull progress, serve
 # dashboard); crossterm is its backend and also styles the static screens.
 # clap_complete generates shell completion scripts (first-party clap companion).
-ratatui = "0.29"
+ratatui = "0.30"
 crossterm = "0.28"
 clap_complete = "4"
 
