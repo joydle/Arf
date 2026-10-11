@@ -3,9 +3,28 @@
 Every number here is dated, with its machine and method, in [`PERFORMANCE.md`](PERFORMANCE.md) (one M4 Max, 36 GB,
 unless an entry says otherwise).
 
-**Version:** 1.0.0 · **Tag:** `v1.0.0` · **Date:** 2026-10-10 ([RELEASING.md](RELEASING.md))
+**Version:** 1.0.1 · **Tag:** `v1.0.1` · **Date:** 2026-10-11 ([RELEASING.md](RELEASING.md))
 
 **Install:** `brew install joydle/tap/arf` (Apple silicon), or build from source — see the README.
+
+## Arf 1.0.1
+
+Fixes for agent sessions that 1.0.0's release test found ending with their task undone.
+
+- **A request without a temperature samples at the model's own.** Claude Code in thinking mode sends none, and
+  Arf decoded such a request greedily; the 27B then sometimes wrote a malformed tool call
+  (`<command>…</parameter>` for `<parameter=command>`), the agent printed the raw text and stopped. The default
+  is now the model's declared one (the GGUF's `general.sampling.temp`, 1.0 on the 27B — also the OpenAI and
+  Anthropic APIs' default); a model that declares none stays greedy. Speculative decoding stays on.
+- **A loop guard instead of a penalty on everything.** A sampled answer can loop (turns of 10,000-18,000
+  tokens in the 1.0.0 test). An answer whose tail turns periodic now gets a 1.1 repetition penalty from that
+  token on (`[guard]` in the log); every other answer is untouched — a penalty on every request made agents 3-4×
+  slower.
+- **Two near-miss tool-call forms are read** (`<KEY>…</parameter>` and `KEY": "VALUE"` inside a call), only when
+  KEY is a parameter of that tool.
+- **Claude Code's safety check is read ahead of the session, in arrival order**, not when the GPU is idle — an
+  agent never leaves it idle, and the first tool calls were refused as "temporarily unavailable". A machine's
+  first session may wait ~3 min longer for its first answer; the check is then saved to disk.
 
 ## Arf 1.0.0
 

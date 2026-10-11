@@ -21,7 +21,7 @@ type_complexity = "allow"
 doc_lazy_continuation = "allow"
 
 [workspace.package]
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 license = "Apache-2.0"
 # repository = "<REPO_URL>"  -- not set yet. Set it here (and `homepage`), then add
