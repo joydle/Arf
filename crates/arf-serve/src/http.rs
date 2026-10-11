@@ -2540,13 +2540,14 @@ fn fresh_seed() -> u64 {
     z ^ (z >> 31)
 }
 
-/// The model's own sampling defaults (GGUF `general.sampling.top_k` / `top_p`), used when a SAMPLED
-/// request omits them. Set once at startup (`main.rs`).
-static MODEL_SAMPLING: std::sync::OnceLock<(Option<usize>, Option<f32>)> =
+/// The model's own sampling defaults (GGUF `general.sampling.top_k` / `top_p` / `temp`): top_k and
+/// top_p for a SAMPLED request that omits them, the temperature for a request that omits it. Set
+/// once at startup (`server.rs`).
+static MODEL_SAMPLING: std::sync::OnceLock<(Option<usize>, Option<f32>, Option<f32>)> =
     std::sync::OnceLock::new();
 
-pub fn set_model_sampling_defaults(top_k: Option<usize>, top_p: Option<f32>) {
-    let _ = MODEL_SAMPLING.set((top_k, top_p));
+pub fn set_model_sampling_defaults(top_k: Option<usize>, top_p: Option<f32>, temp: Option<f32>) {
+    let _ = MODEL_SAMPLING.set((top_k, top_p, temp));
 }
 
 fn build_sampling(
@@ -2556,18 +2557,27 @@ fn build_sampling(
     seed: Option<u64>,
     repetition_penalty: Option<f32>,
 ) -> Result<SamplingParams, (StatusCode, String)> {
-    let temp = temperature.unwrap_or(0.0);
-    let stochastic = temp > 0.0;
     // THE MODEL'S OWN DEFAULTS (2026-09-26) for what a sampled request leaves out: top_k and
     // top_p from the GGUF's `general.sampling.*` (Qwen3.8: 20 / 0.95), and NO repetition
-    // penalty (the model's config names none; another engine and HF apply none). The temperature default
-    // stays 0 (greedy). `ARF_LEGACY_SAMPLING_DEFAULTS=1` restores the previous defaults (A/B).
+    // penalty (the model's config names none; another engine and HF apply none).
+    // `ARF_LEGACY_SAMPLING_DEFAULTS=1` restores the previous defaults (A/B).
+    //
+    // THE TEMPERATURE TOO (2026-10-11): a request that omits it gets the model's
+    // `general.sampling.temp` (Qwen3.8: 1.0, also the OpenAI and Anthropic APIs' default); a model
+    // that names none stays greedy. Until 1.0.0 an omitted temperature was 0 — and Claude Code in
+    // thinking mode omits it. MEASURED (the 1.0.0 release test, the 27B): greedy decoding wrote
+    // malformed tool calls (`<command>…</parameter>` for `<parameter=command>`), the agent printed
+    // the raw `</parameter>` and stopped, and the real task failed; the same request with an
+    // explicit temperature gave 5 distinct well-formed answers of 5, without one 1 of 4.
+    // Speculation is kept: sampled requests draft through `RowSampler` (`sampled_draft_on`).
     let legacy = std::env::var_os("ARF_LEGACY_SAMPLING_DEFAULTS").is_some();
-    let (model_k, model_p) = if legacy {
-        (None, None)
+    let (model_k, model_p, model_t) = if legacy {
+        (None, None, None)
     } else {
-        MODEL_SAMPLING.get().copied().unwrap_or((None, None))
+        MODEL_SAMPLING.get().copied().unwrap_or((None, None, None))
     };
+    let temp = temperature.or(model_t).unwrap_or(0.0);
+    let stochastic = temp > 0.0;
     let params = SamplingParams {
         temperature: temp,
         top_k: top_k.or(if stochastic { model_k } else { None }),

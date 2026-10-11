@@ -666,10 +666,14 @@ pub fn run(build_backend: BackendFactory) -> Result<(), Box<dyn Error>> {
             .get_metadata_u32("general.sampling.top_k")
             .map(|k| k as usize);
         let top_p = g.get_metadata_f32("general.sampling.top_p");
-        if top_k.is_some() || top_p.is_some() {
-            eprintln!("[serve] model sampling defaults (GGUF): top_k {top_k:?}, top_p {top_p:?}");
+        let temp = g.get_metadata_f32("general.sampling.temp");
+        if top_k.is_some() || top_p.is_some() || temp.is_some() {
+            eprintln!(
+                "[serve] model sampling defaults (GGUF): temperature {temp:?}, top_k {top_k:?}, \
+                 top_p {top_p:?} (for what a request omits)"
+            );
         }
-        http::set_model_sampling_defaults(top_k, top_p);
+        http::set_model_sampling_defaults(top_k, top_p, temp);
     }
     // The model's OWN chat template (the GGUF's `tokenizer.chat_template`), compiled once: requests
     // with tools or tool history render through it when it teaches a tool format Arf parses.
