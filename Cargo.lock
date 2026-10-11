@@ -128,7 +128,7 @@ dependencies = [
 
 [[package]]
 name = "arf-cli"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "arf-core",
  "arf-gpu",
@@ -144,7 +144,7 @@ dependencies = [
 
 [[package]]
 name = "arf-core"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "arf-ml",
  "criterion",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "arf-gpu"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "arf-core",
  "block2",
@@ -184,7 +184,7 @@ dependencies = [
 
 [[package]]
 name = "arf-ml"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "criterion",
  "rand 0.9.5",
@@ -193,7 +193,7 @@ dependencies = [
 
 [[package]]
 name = "arf-router"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -214,7 +214,7 @@ dependencies = [
 
 [[package]]
 name = "arf-serve"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "arf-core",
  "arf-gpu",
