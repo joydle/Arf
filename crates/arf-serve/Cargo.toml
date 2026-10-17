@@ -56,7 +56,7 @@ base64 = "0.22"
 # Python dicts are ordered); `loop_controls` is HF's `jinja2.ext.loopcontrols`. `pycompat` is
 # what makes `.startswith()` / `.items()` / `.keys()` work, which real templates call.
 minijinja = { version = "2.24", features = ["json", "preserve_order", "loop_controls"] }
-minijinja-contrib = { version = "2.24", features = ["pycompat"] }
+minijinja-contrib = { version = "3.0", features = ["pycompat"] }
 # Opt-in chat persistence (feature = "postgres"). Runtime queries only (no compile-time
 # `query!` macro), so the crate builds with NO database reachable.
 sqlx = { version = "0.9", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "macros", "migrate"], optional = true }
